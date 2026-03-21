@@ -1,6 +1,6 @@
 import React from "react";
 import { useCartStore } from "../features/cart/store/useCartStore";
-import { useAuth } from "../features/auth/hooks/useAuth";
+import { useAuth } from "../features/auth/context/AuthProvider";
 import { useCreateOrder } from "../features/orders/hooks/useOrders";
 import { useNavigate } from "react-router-dom";
 

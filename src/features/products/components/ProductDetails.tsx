@@ -13,7 +13,7 @@ export const ProductDetails: React.FC<Props> = ({ product }) => {
       {/* Product Image */}
       <div>
         <img
-          src={product.image_url || "https://via.placeholder.com/500"}
+          src={product.image || "https://via.placeholder.com/500"}
           alt={product.name}
           className="w-full h-full rounded-lg object-cover border border-gray-400"
         />
@@ -37,7 +37,7 @@ export const ProductDetails: React.FC<Props> = ({ product }) => {
               id: product.id,
               name: product.name,
               price: product.price,
-              image: product.image_url,
+              image: product.image,
               quantity: 1,
             })
           }

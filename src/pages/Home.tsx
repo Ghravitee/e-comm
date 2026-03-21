@@ -1,29 +1,22 @@
 import React from "react";
-import { useProducts } from "../features/products/hooks/useProducts";
-import { ProductGrid } from "../features/products/components/ProductGrid";
+
 import { Hero } from "../shared/components/Hero";
 import { Categories } from "../shared/components/Categories";
 import { Container } from "../shared/components/Container";
+import { ProfileCompletionBanner } from "../features/profiles/components/ProfileCompletionBanner"; // You'll need to create this
+import FeaturedProducts from "../shared/components/FeaturedProducts";
+import Inspiration from "../shared/components/Inspiration";
 
 export const Home: React.FC = () => {
-  const { data: products, isLoading, isError } = useProducts();
-
   return (
     <>
+      <ProfileCompletionBanner />
       <Hero />
-
       <Categories />
-
       <Container>
-        <h2 className="text-3xl font-bold text-gray-900 mb-10">
-          Featured Products
-        </h2>
-
-        {isLoading && <p>Loading products...</p>}
-        {isError && <p>Failed to load products.</p>}
-
-        {products && <ProductGrid products={products} />}
+        <FeaturedProducts />
       </Container>
+      <Inspiration />
     </>
   );
 };

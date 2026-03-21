@@ -1,54 +1,49 @@
 import { useCartStore } from "../store/useCartStore";
-import { useState } from "react";
 import { ShoppingCart, X } from "lucide-react";
-import { useNavigate } from "react-router-dom"; // ← import this
+import { useNavigate } from "react-router-dom";
 
-export const CartDrawer = () => {
-  const [open, setOpen] = useState(false);
+interface CartDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
   const { items, removeItem, increaseQty, decreaseQty, total } = useCartStore();
-  const navigate = useNavigate(); // ← initialize navigate
+  const navigate = useNavigate();
 
   const handleCheckout = () => {
-    setOpen(false); // close the cart drawer
+    onClose(); // close the cart drawer
     navigate("/checkout"); // navigate to checkout page
   };
 
   return (
     <>
-      {/* Cart Button */}
-      <button
-        className="cursor-pointer fixed top-4 right-4 z-40 flex items-center justify-center p-2 rounded-full bg-green-600 hover:bg-green-700 transition"
-        onClick={() => setOpen(true)}
-      >
-        <ShoppingCart className="text-2xl text-white" />
-        {items.length > 0 && (
-          <span className="absolute -top-2 -right-2 w-5 h-5 text-xs flex items-center justify-center rounded-full bg-red-500 text-white font-bold">
-            {items.length}
-          </span>
-        )}
-      </button>
+      {/* Cart Button - This is now removed since we're using the navbar button */}
 
       {/* Overlay */}
       <div
-        className={`fixed inset-0 bg-black/30 transition-opacity ${
-          open
+        className={`fixed inset-0 bg-black/30 transition-opacity z-40 ${
+          isOpen
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
         }`}
-        onClick={() => setOpen(false)}
+        onClick={onClose}
       ></div>
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl transform transition-transform ${
-          open ? "translate-x-0" : "translate-x-full"
-        } flex flex-col z-50`}
+        className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl transform transition-transform z-50 ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        } flex flex-col`}
       >
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">Your Cart</h2>
+          <div className="flex items-center gap-2">
+            <ShoppingCart className="text-gray-700" />
+            <h2 className="text-xl font-semibold text-gray-900">Your Cart</h2>
+          </div>
           <button
-            onClick={() => setOpen(false)}
+            onClick={onClose}
             className="p-1 rounded hover:bg-gray-100 transition"
           >
             <X className="text-gray-700" />
@@ -65,22 +60,24 @@ export const CartDrawer = () => {
           {items.map((item) => (
             <div
               key={item.id}
-              className="flex items-center justify-between p-3 rounded-lg shadow-sm hover:shadow-md transition"
+              className="flex items-center justify-between p-3 rounded-lg shadow-sm hover:shadow-md transition border"
             >
-              <div>
+              <div className="flex-1">
                 <p className="font-medium text-gray-800">{item.name}</p>
-                <p className="text-gray-600">${item.price}</p>
+                <p className="text-gray-600">${item.price.toFixed(2)}</p>
                 <div className="flex items-center space-x-2 mt-2">
                   <button
                     onClick={() => decreaseQty(item.id)}
-                    className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 transition"
+                    className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded hover:bg-gray-300 transition"
                   >
                     -
                   </button>
-                  <span className="font-medium">{item.quantity}</span>
+                  <span className="font-medium w-8 text-center">
+                    {item.quantity}
+                  </span>
                   <button
                     onClick={() => increaseQty(item.id)}
-                    className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 transition"
+                    className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded hover:bg-gray-300 transition"
                   >
                     +
                   </button>
@@ -88,7 +85,7 @@ export const CartDrawer = () => {
               </div>
               <button
                 onClick={() => removeItem(item.id)}
-                className="text-red-500 font-semibold hover:text-red-600 transition"
+                className="text-red-500 font-semibold hover:text-red-600 transition ml-2"
               >
                 Remove
               </button>
@@ -98,9 +95,12 @@ export const CartDrawer = () => {
 
         {/* Footer */}
         <div className="p-4 border-t">
-          <p className="font-semibold text-gray-900 text-lg">
-            Total: ${total()}
-          </p>
+          <div className="flex justify-between items-center mb-3">
+            <span className="font-medium text-gray-700">Subtotal:</span>
+            <p className="font-semibold text-gray-900 text-lg">
+              ${total().toFixed(2)}
+            </p>
+          </div>
           <button
             onClick={() => {
               if (items.length === 0) {
@@ -109,9 +109,17 @@ export const CartDrawer = () => {
               }
               handleCheckout();
             }}
-            className="w-full mt-3 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+            className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
           >
-            Checkout
+            Proceed to Checkout
+          </button>
+
+          {/* Continue shopping button */}
+          <button
+            onClick={onClose}
+            className="w-full mt-2 py-2 text-gray-600 hover:text-gray-800 transition font-medium text-sm"
+          >
+            Continue Shopping
           </button>
         </div>
       </div>

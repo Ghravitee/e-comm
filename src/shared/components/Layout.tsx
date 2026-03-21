@@ -1,7 +1,7 @@
 import React from "react";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
-import { CartDrawer } from "../../features/cart/components/CartDrawer";
+// import { DebugAuth } from "./DebugAuth";
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -11,11 +11,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
       <Navbar />
 
       <main className="flex-1">{children}</main>
-
+      {/* <DebugAuth /> */}
       <Footer />
-
-      {/* Cart Drawer will always be rendered */}
-      <CartDrawer />
     </div>
   );
 };
