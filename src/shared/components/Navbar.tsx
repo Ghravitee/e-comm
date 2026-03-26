@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Container } from "./Container";
-import { useAuth } from "../../features/auth/context/AuthProvider";
+import { useAuth } from "../../features/auth/hooks/useAuth";
 import { useProfile } from "../../features/profiles/hooks/useProfile";
 import { useAdminProfile } from "../../features/profiles/hooks/useAdminProfile";
 import { signOut } from "../../features/auth/api/auth";
 import { useCartStore } from "../../features/cart/store/useCartStore";
+import { useFavoritesStore } from "../../features/favorites/store/useFavoritesStore";
 import {
   User,
   Heart,
@@ -15,6 +16,8 @@ import {
   LogIn,
   UserPlus,
   Shield,
+  Package,
+  ShoppingBag,
 } from "lucide-react";
 import { CartDrawer } from "../../features/cart/components/CartDrawer";
 
@@ -25,6 +28,7 @@ export const Navbar: React.FC = () => {
 
   // Only subscribe to items array to prevent unnecessary re-renders
   const items = useCartStore((state) => state.items);
+  const favorites = useFavoritesStore((state) => state.favorites);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -42,6 +46,9 @@ export const Navbar: React.FC = () => {
     (total, item) => total + item.quantity,
     0,
   );
+
+  // Get total number of favorites
+  const favoritesCount = favorites.length;
 
   const handleLogout = async () => {
     try {
@@ -112,13 +119,18 @@ export const Navbar: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-6">
-              {/* Favorites Icon */}
+              {/* Favorites Icon with count badge */}
               <Link
                 to="/favorites"
-                className="hover:opacity-80 transition-opacity"
+                className="hover:opacity-80 transition-opacity relative"
                 aria-label="Favorites"
               >
                 <Heart className="w-5 h-5" />
+                {favoritesCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center px-1">
+                    {favoritesCount > 99 ? "99+" : favoritesCount}
+                  </span>
+                )}
               </Link>
 
               {/* Cart Icon with item count badge */}
@@ -206,6 +218,21 @@ export const Navbar: React.FC = () => {
                           </div>
                         </Link>
                         <Link
+                          to="/favorites"
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Heart className="w-4 h-4" />
+                            My Favorites
+                            {favoritesCount > 0 && (
+                              <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                {favoritesCount > 99 ? "99+" : favoritesCount}
+                              </span>
+                            )}
+                          </div>
+                        </Link>
+                        <Link
                           to="/orders"
                           onClick={() => setIsDropdownOpen(false)}
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -216,16 +243,38 @@ export const Navbar: React.FC = () => {
                           </div>
                         </Link>
                         {isAdmin && (
-                          <Link
-                            to="/admin/products"
-                            onClick={() => setIsDropdownOpen(false)}
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                          >
-                            <div className="flex items-center gap-2">
-                              <Shield className="w-4 h-4" />
-                              Admin Dashboard
-                            </div>
-                          </Link>
+                          <>
+                            <Link
+                              to="/admin/products"
+                              onClick={() => setIsDropdownOpen(false)}
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Shield className="w-4 h-4" />
+                                Admin Dashboard
+                              </div>
+                            </Link>
+                            <Link
+                              to="/admin/orders"
+                              onClick={() => setIsDropdownOpen(false)}
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Package className="w-4 h-4" />
+                                Manage Orders
+                              </div>
+                            </Link>
+                            <Link
+                              to="/admin/products"
+                              onClick={() => setIsDropdownOpen(false)}
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              <div className="flex items-center gap-2">
+                                <ShoppingBag className="w-4 h-4" />
+                                Manage Products
+                              </div>
+                            </Link>
+                          </>
                         )}
                         <button
                           onClick={handleLogout}

@@ -1,5 +1,5 @@
 // components/DebugAuth.tsx
-import { useAuth } from "../../features/auth/context/AuthProvider";
+import { useAuth } from "../../features/auth/hooks/useAuth";
 import { LoadingScreen } from "./LoadingScreen";
 
 export const DebugAuth = ({ children }: { children: React.ReactNode }) => {

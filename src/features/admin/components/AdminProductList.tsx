@@ -1,11 +1,11 @@
 // features/products/components/AdminProductList.tsx
 import React, { useState } from "react";
-import { useProducts } from "../hooks/useProducts";
-import { useDeleteProduct } from "../hooks/useDeleteProduct";
-import { useUpdateProduct } from "../hooks/useUpdateProduct";
-import { useUploadImage } from "../hooks/useUploadImage";
+import { useProducts } from "../../products/hooks/useProducts";
+import { useDeleteProduct } from "../../products/hooks/useDeleteProduct";
+import { useUpdateProduct } from "../../products/hooks/useUpdateProduct";
+import { useUploadImage } from "../../products/hooks/useUploadImage";
 import { Edit, Trash2 } from "lucide-react";
-import type { Product } from "../types";
+import type { Product } from "../../products/types";
 
 export const AdminProductList = () => {
   const { data: products, isLoading, error } = useProducts();

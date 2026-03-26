@@ -1,15 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { signUp, signInWithGoogle } from "../features/auth/api/auth";
-import {
-  validateEmail,
-  validatePassword,
-} from "../features/auth/utils/validation";
-import { AlertCircle, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { signIn, signInWithGoogle } from "../api/auth";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 
-export const SignUp: React.FC = () => {
-  const navigate = useNavigate();
+export const SignIn: React.FC = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -19,16 +14,35 @@ export const SignUp: React.FC = () => {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string })?.from || "/";
+
+  // Validation functions
+  const validateEmail = (email: string): string | null => {
+    if (!email) return "Email is required";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    return null;
+  };
+
+  const validatePassword = (password: string): string | null => {
+    if (!password) return "Password is required";
+    if (password.length < 6) return "Password must be at least 6 characters";
+    return null;
+  };
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
+    // Clear field error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+    // Clear server error when user makes changes
     if (serverError) setServerError(null);
   };
 
@@ -36,24 +50,12 @@ export const SignUp: React.FC = () => {
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setTouched((prev) => ({ ...prev, [name]: true }));
-    validateField(name, value);
-  };
 
-  // Validate a single field
-  const validateField = (fieldName: string, value: string) => {
     let error = null;
+    if (name === "email") error = validateEmail(value);
+    if (name === "password") error = validatePassword(value);
 
-    switch (fieldName) {
-      case "email":
-        error = validateEmail(value);
-        break;
-      case "password":
-        error = validatePassword(value);
-        break;
-    }
-
-    setErrors((prev) => ({ ...prev, [fieldName]: error || "" }));
-    return !error;
+    setErrors((prev) => ({ ...prev, [name]: error || "" }));
   };
 
   // Validate all fields
@@ -69,48 +71,48 @@ export const SignUp: React.FC = () => {
     setErrors(newErrors);
     setTouched({ email: true, password: true });
 
-    return !Object.values(newErrors).some((error) => error !== "");
+    return !emailError && !passwordError;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
     setServerError(null);
-    setSuccessMessage(null);
 
     try {
-      await signUp({
-        email: formData.email,
-        password: formData.password,
-      });
+      await signIn(formData.email, formData.password);
 
-      setSuccessMessage(
-        "Account created successfully! Please check your email for confirmation.",
-      );
-
-      setTimeout(() => {
-        navigate("/signin");
-      }, 3000);
+      // Always navigate to a page guarded by ProfileGuard
+      navigate("/", { replace: true });
     } catch (err: any) {
-      setServerError(
-        err.message || "Failed to create account. Please try again.",
-      );
+      if (err.message.includes("Invalid login credentials")) {
+        setServerError("Invalid email or password. Please try again.");
+      } else if (err.message.includes("Email not confirmed")) {
+        setServerError("Please confirm your email address before signing in.");
+      } else {
+        setServerError(err.message || "Failed to sign in. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleSignup = async () => {
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setServerError(null);
+
     try {
-      setIsLoading(true);
       await signInWithGoogle();
+
+      // Navigate to a page inside ProfileGuard
+      navigate("/", { replace: true });
     } catch (err: any) {
-      setServerError(err.message);
+      setServerError(
+        err.message || "Failed to sign in with Google. Please try again.",
+      );
       setIsLoading(false);
     }
   };
@@ -120,7 +122,7 @@ export const SignUp: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-amber-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-amber-50 to-amber-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
         {/* Logo/Brand */}
         <div className="text-center mb-8">
@@ -130,18 +132,11 @@ export const SignUp: React.FC = () => {
             </h1>
           </Link>
           <p className="mt-2 text-gray-600">
-            Create your account to get started.
+            Welcome back! Please sign in to continue.
           </p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Success Message */}
-          {successMessage && (
-            <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded">
-              <p className="text-sm text-green-700">{successMessage}</p>
-            </div>
-          )}
-
           {/* Error Message */}
           {serverError && (
             <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
@@ -152,13 +147,12 @@ export const SignUp: React.FC = () => {
             </div>
           )}
 
-          {/* Google Sign Up Button */}
+          {/* Google Sign In Button */}
           <button
             type="button"
-            onClick={handleGoogleSignup}
+            onClick={handleGoogleLogin}
             disabled={isLoading}
-            className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-            style={{ focusRingColor: "#b88e2f" }}
+            className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path
@@ -188,12 +182,12 @@ export const SignUp: React.FC = () => {
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-4 bg-white text-gray-500">
-                Or sign up with email
+                Or continue with email
               </span>
             </div>
           </div>
 
-          {/* Email Sign Up Form */}
+          {/* Email Sign In Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Field */}
             <div>
@@ -201,7 +195,7 @@ export const SignUp: React.FC = () => {
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Email address <span className="text-red-500">*</span>
+                Email address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -217,9 +211,8 @@ export const SignUp: React.FC = () => {
                   className={`block w-full pl-10 pr-3 py-3 border ${
                     touched.email && errors.email
                       ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                      : "border-gray-300 focus:ring-2 focus:border-transparent"
+                      : "border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
                   } rounded-lg shadow-sm placeholder-gray-400 focus:outline-none transition-colors`}
-                  style={{ focusRingColor: "#b88e2f" }}
                   placeholder="you@example.com"
                   disabled={isLoading}
                 />
@@ -234,12 +227,21 @@ export const SignUp: React.FC = () => {
 
             {/* Password Field */}
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Password <span className="text-red-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Password
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-sm font-medium hover:underline"
+                  style={{ color: "#b88e2f" }}
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />
@@ -254,9 +256,8 @@ export const SignUp: React.FC = () => {
                   className={`block w-full pl-10 pr-10 py-3 border ${
                     touched.password && errors.password
                       ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                      : "border-gray-300 focus:ring-2 focus:border-transparent"
+                      : "border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
                   } rounded-lg shadow-sm placeholder-gray-400 focus:outline-none transition-colors`}
-                  style={{ focusRingColor: "#b88e2f" }}
                   placeholder="••••••••"
                   disabled={isLoading}
                 />
@@ -278,26 +279,13 @@ export const SignUp: React.FC = () => {
                   {errors.password}
                 </p>
               )}
-              <p className="mt-1 text-xs text-gray-500">
-                Password must be at least 6 characters
-              </p>
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] mt-6"
-              style={{
-                backgroundColor: "#b88e2f",
-                focusRingColor: "#b88e2f",
-              }}
-              onMouseOver={(e) =>
-                (e.currentTarget.style.backgroundColor = "#9e7627")
-              }
-              onMouseOut={(e) =>
-                (e.currentTarget.style.backgroundColor = "#b88e2f")
-              }
+              className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-[#9e7627] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               {isLoading ? (
                 <>
@@ -321,25 +309,33 @@ export const SignUp: React.FC = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Creating account...
+                  Signing in...
                 </>
               ) : (
-                "Sign Up"
+                "Sign In"
               )}
             </button>
           </form>
 
-          {/* Sign In Link */}
+          {/* Sign Up Link */}
           <p className="mt-6 text-center text-sm text-gray-600">
-            Already have an account?{" "}
+            Don't have an account?{" "}
             <Link
-              to="/signin"
+              to="/signup"
+              state={{ from }}
               className="font-medium hover:underline"
               style={{ color: "#b88e2f" }}
             >
-              Sign in
+              Create an account
             </Link>
           </p>
+
+          {/* Demo Credentials (Optional - remove in production) */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-xs text-gray-500 mb-2">Demo Credentials:</p>
+            <p className="text-xs text-gray-600">Email: demo@greencart.com</p>
+            <p className="text-xs text-gray-600">Password: demo123456</p>
+          </div>
         </div>
       </div>
     </div>

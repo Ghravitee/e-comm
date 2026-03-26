@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "../../auth/context/AuthProvider";
+import { useAuth } from "../../auth/hooks/useAuth";
 import { fetchProfileById } from "../api/profiles";
 import type { Profile } from "../types";
 

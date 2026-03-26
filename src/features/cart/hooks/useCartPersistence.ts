@@ -9,67 +9,49 @@ export const useCartPersistence = () => {
   const setItems = useCartStore((s) => s.setItems);
 
   const [user, setUser] = useState<any>(null);
-  const [hydrated, setHydrated] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
-  // -----------------------------
-  // Get Supabase session
-  // -----------------------------
+  // Get user
   useEffect(() => {
-    const getSession = async () => {
-      const { data } = await supabase.auth.getSession();
+    supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user ?? null);
-    };
-    getSession();
+    });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user ?? null);
+      setLoaded(false); // Reset when user changes
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // -----------------------------
-  // Load + merge cart once when user logs in
-  // -----------------------------
+  // Load cart once when user is available
   useEffect(() => {
-    if (!user) return;
+    if (!user || loaded) return;
 
-    const loadCart = async () => {
-      try {
-        const backendItems = await getCartFromBackend(user.id);
+    getCartFromBackend(user.id)
+      .then((backendItems) => {
+        if (backendItems.length > 0) {
+          setItems(backendItems);
+        }
+        setLoaded(true);
+      })
+      .catch((err) => {
+        console.error("Failed to load cart:", err);
+        setLoaded(true);
+      });
+  }, [user, loaded, setItems]);
 
-        // Merge guest cart with backend cart
-        const merged = [...backendItems];
-        items.forEach((guestItem) => {
-          const existing = merged.find((i) => i.id === guestItem.id);
-          if (existing) {
-            existing.quantity += guestItem.quantity;
-          } else {
-            merged.push(guestItem);
-          }
-        });
-
-        setItems(merged);
-
-        await saveCartToBackend(user.id, merged);
-
-        setHydrated(true);
-      } catch (error) {
-        console.error("Cart merge failed:", error);
-        setHydrated(true);
-      }
-    };
-
-    loadCart();
-  }, [user]); // ✅ only runs once per login
-
-  // -----------------------------
-  // Save cart to backend when items change
-  // -----------------------------
+  // Save cart when it changes (only after loaded)
   useEffect(() => {
-    if (!user || !hydrated) return;
-    saveCartToBackend(user.id, items).catch(console.error);
-  }, [items, hydrated, user]);
+    if (!user || !loaded) return;
+
+    const timer = setTimeout(() => {
+      saveCartToBackend(user.id, items);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [items, user, loaded]);
 };

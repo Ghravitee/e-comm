@@ -1,7 +1,7 @@
 // pages/admin/products.tsx
-import { AdminProductForm } from "../../features/products/components/AdminProductForm";
-import { AdminProductList } from "../../features/products/components/AdminProductList";
-import { useAdminProfile } from "../../features/profiles/hooks/useAdminProfile";
+import { AdminProductForm } from "../components/AdminProductForm";
+import { AdminProductList } from "../components/AdminProductList";
+import { useAdminProfile } from "../../profiles/hooks/useAdminProfile";
 
 export const AdminProductsPage = () => {
   const { loading } = useAdminProfile();

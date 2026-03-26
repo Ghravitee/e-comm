@@ -1,7 +1,7 @@
 // features/profile/components/ProfileCompletionBanner.tsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../auth/context/AuthProvider";
+import { useAuth } from "../../auth/hooks/useAuth"; // Import useAuth
 import { useProfile } from "../hooks/useProfile"; // Import useProfile
 import { X } from "lucide-react";
 

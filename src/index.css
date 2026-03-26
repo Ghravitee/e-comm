@@ -21,6 +21,13 @@ button {
   background-position: 100% 80%;
 }
 
+.shop-bg {
+  background-image: url("./assets/Wood-sideboard-in-living-room-interior.webp");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: 100% 80%;
+}
+
 @theme {
   --color-primary: #b88e2f;
 

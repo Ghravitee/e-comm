@@ -1,6 +1,6 @@
-import { useProfile } from "../features/profiles/hooks/useProfile";
-import { ProfileForm } from "../features/profiles/components/ProfileForm";
-import { LoadingScreen } from "../shared/components/LoadingScreen";
+import { useProfile } from "../hooks/useProfile";
+import { ProfileForm } from "../components/ProfileForm";
+import { LoadingScreen } from "../../../shared/components/LoadingScreen";
 
 export const CompleteProfile = () => {
   const { profile, loading } = useProfile();

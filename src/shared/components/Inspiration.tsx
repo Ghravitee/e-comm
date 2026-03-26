@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Container } from "./Container";
 
 const Inspiration = () => {
@@ -34,7 +34,7 @@ const Inspiration = () => {
     },
   ];
 
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
 
   const handleNext = () => {
     setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
@@ -46,7 +46,7 @@ const Inspiration = () => {
     );
   };
 
-  const handleThumbnailClick = (index) => {
+  const handleThumbnailClick = (index: number) => {
     setCurrentIndex(index);
   };
 

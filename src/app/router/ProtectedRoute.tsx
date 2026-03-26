@@ -1,10 +1,10 @@
 // shared/components/ProtectedRoute.tsx
 
-import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../../features/auth/context/AuthProvider";
+import { Outlet } from "react-router-dom";
+import { useAuth } from "../../features/auth/hooks/useAuth";
 
 export const ProtectedRoute = () => {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
 
   if (loading) {
     return (

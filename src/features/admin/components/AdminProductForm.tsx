@@ -1,9 +1,9 @@
 // features/products/components/AdminProductForm.tsx
 import React, { useState } from "react";
-import { useCreateProduct } from "../hooks/useCreateProduct";
-import { useUploadImage } from "../hooks/useUploadImage";
+import { useCreateProduct } from "../../products/hooks/useCreateProduct";
+import { useUploadImage } from "../../products/hooks/useUploadImage";
 import { Upload, X } from "lucide-react";
-import { useAuth } from "../../auth/context/AuthProvider";
+import { useAuth } from "../../auth/hooks/useAuth";
 
 export const AdminProductForm = () => {
   const { user } = useAuth();
@@ -70,7 +70,7 @@ export const AdminProductForm = () => {
           price: parseFloat(price),
           description,
           category,
-          image: imageUrl,
+          image: imageUrl || "",
         });
         console.log("Product created successfully");
       } catch (createError) {
@@ -88,7 +88,7 @@ export const AdminProductForm = () => {
       alert("Product created successfully!");
     } catch (error) {
       console.error("Failed to create product:", error);
-      alert(`Failed to create product: ${error.message}`);
+      alert(`Failed to create product: ${error}`);
     } finally {
       setIsSubmitting(false);
     }

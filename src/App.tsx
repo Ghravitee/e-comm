@@ -1,20 +1,26 @@
 // App.tsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Home } from "./pages/Home";
-import { ProductPage } from "./pages/ProductPage";
+
 import { ScrollToTop } from "./app/router/ScrollToTop";
 import { Layout } from "./shared/components/Layout";
 import { ProtectedRoute } from "./app/router/ProtectedRoute";
 import { AdminRoute } from "./app/router/AdminRoute";
-import { Checkout } from "./pages/Checkout";
-import { SignUp } from "./pages/SignUp";
-import { SignIn } from "./pages/SignIn";
+
+import { SignIn } from "./features/auth/pages/SignIn";
+import { SignUp } from "./features/auth/pages/SignUp";
 import { NotFound } from "./pages/NotFound";
 import { useCartPersistence } from "./features/cart/hooks/useCartPersistence";
-import { AdminProductsPage } from "./pages/admin/AdminProductsPage";
+import { AdminProductsPage } from "./features/admin/pages/AdminProductsPage";
 import { DebugAuth } from "./shared/components/DebugAuth";
-import { CompleteProfile } from "./pages/CompleteProfile";
-import Shop from "./pages/Shop";
+import { CompleteProfile } from "./features/profiles/pages/CompleteProfile";
+import Shop from "./features/products/pages/Shop";
+import { ProductDetailsPage } from "./features/products/pages/ProductDetailsPage";
+import { FavoritesPage } from "./features/favorites/pages/FavoritesPage";
+import { OrdersPage } from "./features/orders/pages/OrdersPage";
+import CheckoutPage from "./features/checkout/pages/CheckoutPage";
+import { AdminOrdersPage } from "./features/admin/pages/AdminOrdersPage";
+import { ProfilePage } from "./features/profiles/pages/ProfilePage";
 
 function App() {
   useCartPersistence();
@@ -32,13 +38,25 @@ function App() {
             <Route path="/shop" element={<Shop />} />
 
             <Route element={<ProtectedRoute />}>
-              <Route path="/products/:id" element={<ProductPage />} />
-              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/products/:id" element={<ProductDetailsPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/favorites" element={<FavoritesPage />} />{" "}
+              <Route path="/orders" element={<OrdersPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              {/* Protected */}
               <Route
                 path="/admin/products"
                 element={
                   <AdminRoute>
                     <AdminProductsPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/orders"
+                element={
+                  <AdminRoute>
+                    <AdminOrdersPage />
                   </AdminRoute>
                 }
               />

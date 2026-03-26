@@ -1,6 +1,6 @@
 // shared/components/AdminRoute.tsx
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../../features/auth/context/AuthProvider";
+import { useAuth } from "../../features/auth/hooks/useAuth";
 import { useAdminProfile } from "../../features/profiles/hooks/useAdminProfile";
 import type { JSX } from "react";
 

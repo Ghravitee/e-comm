@@ -34,10 +34,10 @@ export const ProfileForm = ({ profile }: Props) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const updates: { fullName?: string; avatar?: File } = {};
+    const updates: { full_Name?: string; avatar?: File } = {};
 
     if (fullName.trim() !== (profile?.full_name || "")) {
-      updates.fullName = fullName.trim();
+      updates.full_Name = fullName.trim();
     }
 
     if (avatar) {
@@ -46,7 +46,7 @@ export const ProfileForm = ({ profile }: Props) => {
 
     if (Object.keys(updates).length > 0) {
       await completeProfileMutation.mutateAsync({
-        fullName: updates.fullName || fullName,
+        full_name: updates.full_Name || fullName,
         ...(updates.avatar && { avatar: updates.avatar }),
       });
     }
@@ -58,6 +58,11 @@ export const ProfileForm = ({ profile }: Props) => {
 
   const hasChanges =
     fullName.trim() !== (profile?.full_name || "") || avatar !== null;
+
+  const isProfileComplete =
+    Boolean(profile?.full_name) && Boolean(profile?.avatar_url);
+  const shouldDisable =
+    isPending || !fullName.trim() || (!hasChanges && isProfileComplete);
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -134,11 +139,7 @@ export const ProfileForm = ({ profile }: Props) => {
             {/* Submit */}
             <button
               type="submit"
-              disabled={
-                isPending ||
-                !fullName.trim() ||
-                (!hasChanges && profile?.full_name && profile?.avatar_url)
-              }
+              disabled={shouldDisable}
               className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-[#9f7828] transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
             >
               <span>
@@ -147,6 +148,7 @@ export const ProfileForm = ({ profile }: Props) => {
                   : hasChanges
                     ? "Update Profile"
                     : "Profile Complete"}
+                const isProfileComplete
               </span>
 
               {!isPending && hasChanges && <ArrowRight size={18} />}

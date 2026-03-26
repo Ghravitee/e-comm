@@ -1,14 +1,14 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { createContext, useContext } from "react";
+import { createContext } from "react";
 
-type Profile = {
+export type Profile = {
   id: string;
   is_admin: boolean;
   full_name?: string;
   avatar_url?: string;
 };
 
-type AuthContextType = {
+export type AuthContextType = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   user: any;
   profile: Profile | null;
   isAdmin: boolean | undefined;
@@ -21,5 +21,3 @@ export const AuthContext = createContext<AuthContextType>({
   isAdmin: undefined,
   loading: true,
 });
-
-export const useAuth = () => useContext(AuthContext);

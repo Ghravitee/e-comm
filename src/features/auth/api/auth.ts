@@ -4,7 +4,7 @@ import { supabase } from "../../../services/supabase/client";
 export interface SignUpData {
   email: string;
   password: string;
-  fullName: string;
+  fullName?: string;
   avatarFile?: File;
 }
 
