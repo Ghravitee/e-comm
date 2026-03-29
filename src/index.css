@@ -1,7 +1,12 @@
 @import "tailwindcss";
 
 body {
-  font-family: "Poppins", sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   font-weight: 400;
   font-style: normal;
 }
@@ -14,11 +19,18 @@ button {
   color: #333333;
 }
 
+.sec {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
 .hero-bg {
   background-image: url("./assets/scandinavian-interior-mockup-wall-decal-background.png");
   background-size: cover;
   background-repeat: no-repeat;
   background-position: 100% 80%;
+  color: #196d19;
 }
 
 .shop-bg {
@@ -29,7 +41,8 @@ button {
 }
 
 @theme {
-  --color-primary: #b88e2f;
+  --color-primary: black;
+  --sec: "Playfair Display", Georgia, serif;
 
   /* ... */
 }
@@ -320,4 +333,32 @@ button {
   .thumbnail-image {
     height: 50px;
   }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.2s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
 }

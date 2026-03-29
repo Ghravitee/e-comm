@@ -29,10 +29,31 @@ export const signIn = async (email: string, password: string) => {
   return data;
 };
 
-// Google OAuth (unchanged)
+// Google OAuth - Popup mode (stays on same page)
 export const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+      // Use popup mode to stay on the same page
+      queryParams: {
+        access_type: "offline",
+        prompt: "consent",
+      },
+    },
+  });
+
+  if (error) throw error;
+  return data;
+};
+
+// Alternative: Sign in with Google using popup (handles the popup window)
+export const signInWithGooglePopup = async () => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    },
   });
 
   if (error) throw error;

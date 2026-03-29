@@ -1,36 +1,14 @@
-// import React from "react";
-
-// export const Hero: React.FC = () => {
-//   return (
-//     <section className="h-screen hero-bg w-full relative grid grid-cols-2">
-//       <div className="col-start-2 col-end-3 max-w-2xl bg-[#FFF3E3] px-8 py-12 rounded-[10px] h-fit mt-14">
-//         <p className="font-semibold text-gray-900 leading-tight">New Arrival</p>
-//         <h1 className="font-bold text-[52px] text-primary max-w-100 ">
-//           Discover Our New Collection
-//         </h1>
-
-//         <p className="mt-6 para text-lg">
-//           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit
-//           tellus, luctus nec ullamcorper mattis.
-//         </p>
-
-//         <button className="uppercase mt-8 bg-[#B88E2F] text-white font-bold px-12 py-6">
-//           Buy now
-//         </button>
-//       </div>
-//     </section>
-//   );
-// };
-
 import React, { useState } from "react";
-import heroImage from "../../assets/scandinavian-interior-mockup-wall-decal-background.png";
-import blurImage from "../../assets/scandinavian-interior-mockup-wall-decal-background-blur.jpg";
+import heroImage from "../../assets/heroImage.webp";
+import blurImage from "../../assets/heroImage-blur.jpg";
+import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const Hero: React.FC = () => {
   const [loaded, setLoaded] = useState(false);
 
   return (
-    <section className="h-screen w-full relative grid grid-cols-2 overflow-hidden">
+    <section className="relative h-[90vh] min-h-150">
       {/* Background Images */}
       <div className="absolute inset-0">
         {/* Blur placeholder */}
@@ -54,24 +32,25 @@ export const Hero: React.FC = () => {
       </div>
 
       {/* Overlay (optional for readability) */}
-      {/* <div className="absolute inset-0 bg-black/20"></div> */}
+      <div className="absolute inset-0 bg-black/60" />
 
       {/* Content */}
-      <div className="relative col-start-2 col-end-3 max-w-2xl bg-[#FFF3E3] px-8 py-12 rounded-[10px] h-fit mt-14 z-10">
-        <p className="font-semibold text-gray-900 leading-tight">New Arrival</p>
-
-        <h1 className="font-bold text-[52px] text-primary max-w-100">
-          Discover Our New Collection
-        </h1>
-
-        <p className="mt-6 text-lg">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit
-          tellus, luctus nec ullamcorper mattis.
-        </p>
-
-        <button className="uppercase mt-8 bg-[#B88E2F] text-white font-bold px-12 py-6">
-          Buy now
-        </button>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="text-center text-white space-y-6 px-4">
+          <h1 className="text-5xl md:text-7xl tracking-wider font-light">
+            TIMELESS DESIGN
+          </h1>
+          <p className="text-lg md:text-xl tracking-wide max-w-2xl mx-auto">
+            Curated collection of furniture and decor for the modern home
+          </p>
+          <Link
+            to="/shop"
+            className="inline-flex items-center space-x-2 px-8 py-4 bg-white text-neutral-900 text-sm tracking-wide hover:bg-neutral-100 transition-colors"
+          >
+            <span>EXPLORE COLLECTION</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
     </section>
   );

@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React from "react";
 import { useProducts } from "../../features/products/hooks/useProducts";
 import { ProductGrid } from "../../features/products/components/ProductGrid";
+import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
-// Loading Skeleton Component
+// Loading Skeleton Component - Updated to show 8 skeletons
 const ProductSkeletonGrid: React.FC = () => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-      {[...Array(4)].map((_, index) => (
+      {[...Array(8)].map((_, index) => (
         <div key={index} className="group flex flex-col animate-pulse">
           <div className="relative">
             {/* Image Skeleton */}
@@ -30,31 +32,12 @@ const ProductSkeletonGrid: React.FC = () => {
   );
 };
 
-// Alternative: Simple Skeleton (if you prefer a simpler look)
-// const SimpleProductSkeleton: React.FC = () => {
-//   return (
-//     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-//       {[...Array(4)].map((_, index) => (
-//         <div key={index} className="animate-pulse">
-//           <div className="bg-gray-200 h-72 rounded-md"></div>
-//           <div className="mt-4 h-4 bg-gray-200 rounded w-3/4"></div>
-//           <div className="mt-2 h-4 bg-gray-200 rounded w-1/4"></div>
-//           <div className="mt-4 h-10 bg-gray-200 rounded"></div>
-//         </div>
-//       ))}
-//     </div>
-//   );
-// };
-
 // Featured Products Component
 const FeaturedProducts: React.FC = () => {
   const { data: products, isLoading, isError } = useProducts();
-  const [showAll, setShowAll] = useState(false);
 
-  const initialDisplayCount = 8;
-  const displayedProducts = showAll
-    ? products
-    : products?.slice(0, initialDisplayCount);
+  // Get first 8 products for featured section
+  const featuredProducts = products?.slice(0, 8);
 
   // Loading State with Skeletons
   if (isLoading) {
@@ -62,7 +45,7 @@ const FeaturedProducts: React.FC = () => {
       <div className="py-16">
         <div className="text-center mb-6">
           <h2 className="text-3xl font-bold text-gray-900 text-center">
-            Featured Product
+            Featured Products
           </h2>
         </div>
         <ProductSkeletonGrid />
@@ -129,25 +112,27 @@ const FeaturedProducts: React.FC = () => {
   }
 
   return (
-    <div className="py-16">
-      <div className="text-center mb-6">
-        <h2 className="text-3xl font-bold text-gray-900 text-center">
-          Featured Product
+    <div className="py-16 flex justify-center flex-col items-center">
+      <div className="text-center mb-12">
+        <h2 className="text-3xl md:text-4xl tracking-wider font-light mb-4 uppercase">
+          Featured Products
         </h2>
+        <p className="text-neutral-600 max-w-2xl">
+          Handpicked selections for discerning tastes — discover our most loved
+          pieces
+        </p>
       </div>
 
-      <ProductGrid products={displayedProducts || []} />
+      <ProductGrid products={featuredProducts || []} />
 
-      {!showAll && products.length > initialDisplayCount && (
-        <div className="text-center mt-8">
-          <button
-            onClick={() => setShowAll(true)}
-            className="bg-white border border-primary text-primary px-6 py-2 hover:bg-primary hover:text-white transition-colors"
-          >
-            Load More ({products.length - initialDisplayCount} more)
-          </button>
-        </div>
-      )}
+      <div className="text-center mt-12">
+        <Link
+          to="/shop"
+          className="inline-flex items-center justify-center gap-3 bg-white border border-primary uppercase text-primary px-8 py-4 hover:bg-primary hover:text-white transition-colors duration-300"
+        >
+          View All Products <ArrowRight className="w-4 h-4" />
+        </Link>
+      </div>
     </div>
   );
 };

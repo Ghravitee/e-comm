@@ -1,16 +1,13 @@
 // shared/components/AdminRoute.tsx
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 import { useAdminProfile } from "../../features/profiles/hooks/useAdminProfile";
-import type { JSX } from "react";
 
-export const AdminRoute: React.FC<{ children: JSX.Element }> = ({
-  children,
-}) => {
+export const AdminRoute = () => {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdminProfile();
 
-  // Show loading while either auth or admin status is being determined
+  // Show loading while auth/admin status resolves
   if (authLoading || adminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -19,16 +16,16 @@ export const AdminRoute: React.FC<{ children: JSX.Element }> = ({
     );
   }
 
-  // Redirect to signin if not authenticated
+  // Not authenticated
   if (!user) {
     return <Navigate to="/signin" replace />;
   }
 
-  // Redirect to home if authenticated but not admin
+  // Authenticated but not admin
   if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
 
-  // User is authenticated AND is admin
-  return children;
+  // Admin authenticated
+  return <Outlet />;
 };

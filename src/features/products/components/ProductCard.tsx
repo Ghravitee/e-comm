@@ -6,6 +6,10 @@ import { useCartStore } from "../../cart/store/useCartStore";
 import { useFavorites } from "../../favorites/hooks/useFavorites";
 import { Heart, Check } from "lucide-react";
 import { BlurImage } from "../../../shared/components/BlurImage";
+import { RatingStars } from "../../reviews/components/RatingStars";
+import { getProductAverageRating } from "../../reviews/api/reviewsApi";
+import { useQuery } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 interface Props {
   product: Product;
@@ -17,6 +21,14 @@ export const ProductCard: React.FC<Props> = ({ product }) => {
   const { toggleFavorite, isFavorite } = useFavorites();
 
   const [showAddedFeedback, setShowAddedFeedback] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+
+  // Get product rating
+  const { data: ratingData } = useQuery({
+    queryKey: ["product-rating", product.id],
+    queryFn: () => getProductAverageRating(product.id),
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Get current quantity of this product in cart
   const cartItem = items.find((item) => item.id === product.id);
@@ -41,12 +53,43 @@ export const ProductCard: React.FC<Props> = ({ product }) => {
       quantity: 1,
     });
 
-    // Show feedback
     setShowAddedFeedback(true);
+    toast.success(`${product.name} added to cart!`, {
+      duration: 2000,
+      position: "bottom-center",
+      icon: "🛒",
+    });
   };
 
-  const handleToggleFavorite = () => {
-    toggleFavorite(product.id, product);
+  const handleToggleFavorite = async () => {
+    if (isTogglingFavorite) return;
+
+    setIsTogglingFavorite(true);
+    const wasFavorite = isFavorite(product.id);
+
+    try {
+      await toggleFavorite(product.id, product);
+
+      if (wasFavorite) {
+        toast.success(`Removed ${product.name} from favorites`, {
+          duration: 2000,
+          position: "bottom-right",
+        });
+      } else {
+        toast.success(`${product.name} added to favorites!`, {
+          duration: 2000,
+          position: "bottom-right",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+      toast.error("Failed to update favorites. Please try again.", {
+        duration: 3000,
+        position: "bottom-center",
+      });
+    } finally {
+      setIsTogglingFavorite(false);
+    }
   };
 
   const isFav = isFavorite(product.id);
@@ -65,7 +108,10 @@ export const ProductCard: React.FC<Props> = ({ product }) => {
         {/* Favorite Button - Top Right */}
         <button
           onClick={handleToggleFavorite}
-          className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-all"
+          disabled={isTogglingFavorite}
+          className={`absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-all ${
+            isTogglingFavorite ? "opacity-50 cursor-wait" : ""
+          }`}
           aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
         >
           <Heart
@@ -101,6 +147,14 @@ export const ProductCard: React.FC<Props> = ({ product }) => {
         <h3 className="mt-4 font-bold text-gray-900 text-sm">{product.name}</h3>
       </Link>
 
+      {/* Rating Display */}
+      {ratingData && ratingData.count > 0 && (
+        <div className="flex items-center gap-2 mt-1">
+          <RatingStars rating={ratingData.avg} size={14} />
+          <span className="text-xs text-gray-500">({ratingData.count})</span>
+        </div>
+      )}
+
       <p className="font-semibold mt-1 mb-3 text-sm text-gray-700">
         ₦{product.price.toLocaleString()}
       </p>
@@ -116,17 +170,7 @@ export const ProductCard: React.FC<Props> = ({ product }) => {
                 : "bg-primary text-white hover:bg-primary/60"
             }`}
           >
-            {showAddedFeedback ? (
-              <>
-                {/* <Check className="w-5 h-5" /> */}
-                Added to Cart
-              </>
-            ) : (
-              <>
-                {/* <ShoppingCart className="w-5 h-5" /> */}
-                Add to Cart
-              </>
-            )}
+            {showAddedFeedback ? "Added to Cart" : "Add to Cart"}
           </button>
 
           {/* Quantity Badge - Absolutely positioned */}
@@ -140,7 +184,10 @@ export const ProductCard: React.FC<Props> = ({ product }) => {
         {/* Favorite Button */}
         <button
           onClick={handleToggleFavorite}
+          disabled={isTogglingFavorite}
           className={`p-3 transition-colors ${
+            isTogglingFavorite ? "opacity-50 cursor-wait" : ""
+          } ${
             isFav
               ? "bg-red-500 text-white hover:bg-red-600"
               : "bg-primary text-white hover:bg-primary/60"

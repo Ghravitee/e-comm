@@ -1,9 +1,35 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // features/products/components/AdminProductForm.tsx
 import React, { useState } from "react";
 import { useCreateProduct } from "../../products/hooks/useCreateProduct";
 import { useUploadImage } from "../../products/hooks/useUploadImage";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Loader2 } from "lucide-react";
 import { useAuth } from "../../auth/hooks/useAuth";
+import toast from "react-hot-toast";
+
+// Category options for the store
+const CATEGORIES = [
+  {
+    value: "living-room",
+    label: "Living Room",
+    description: "Sofas, coffee tables, entertainment centers",
+  },
+  {
+    value: "dining",
+    label: "Dining Room",
+    description: "Dining tables, chairs, dinnerware",
+  },
+  {
+    value: "bedroom",
+    label: "Bedroom",
+    description: "Beds, mattresses, pillows, bedding",
+  },
+  {
+    value: "accessories",
+    label: "Accessories",
+    description: "Lamps, vases, mirrors, decor",
+  },
+];
 
 export const AdminProductForm = () => {
   const { user } = useAuth();
@@ -42,17 +68,37 @@ export const AdminProductForm = () => {
     console.log("Form submitted");
     setIsSubmitting(true);
 
+    // Show loading toast
+    const loadingToast = toast.loading("Creating product...", {
+      position: "top-right",
+    });
+
     try {
       // 1. Upload image if selected
-      let imageUrl = null;
+      let imageUrl = "";
       if (imageFile) {
         console.log("Uploading image...", imageFile.name);
         try {
           const uploadedUrl = await uploadImage.mutateAsync(imageFile);
           console.log("Image uploaded successfully:", uploadedUrl);
           imageUrl = uploadedUrl;
+
+          // Update loading toast
+          toast.loading("Image uploaded, creating product...", {
+            id: loadingToast,
+            position: "top-right",
+          });
         } catch (uploadError) {
           console.error("Image upload failed:", uploadError);
+          toast.error(
+            "Image upload failed. Product will be created without image.",
+            {
+              id: loadingToast,
+              duration: 4000,
+              position: "top-right",
+            },
+          );
+          imageUrl = "";
         }
       }
 
@@ -64,18 +110,15 @@ export const AdminProductForm = () => {
         category,
         imageUrl,
       });
-      try {
-        await createProduct.mutateAsync({
-          name,
-          price: parseFloat(price),
-          description,
-          category,
-          image: imageUrl || "",
-        });
-        console.log("Product created successfully");
-      } catch (createError) {
-        console.error("Product creation failed:", createError);
-      }
+
+      await createProduct.mutateAsync({
+        name,
+        price: parseFloat(price),
+        description,
+        category,
+        image: imageUrl,
+      });
+      console.log("Product created successfully");
 
       // 3. Reset form
       setName("");
@@ -85,13 +128,36 @@ export const AdminProductForm = () => {
       setImageFile(null);
       setImagePreview(null);
 
-      alert("Product created successfully!");
-    } catch (error) {
+      // Show success toast
+      toast.success("Product created successfully!", {
+        id: loadingToast,
+        duration: 4000,
+        position: "top-right",
+      });
+    } catch (error: any) {
       console.error("Failed to create product:", error);
-      alert(`Failed to create product: ${error}`);
+
+      // Show error toast
+      let errorMessage = "Failed to create product. Please try again.";
+      if (error.message?.includes("permission")) {
+        errorMessage = "You don't have permission to create products.";
+      } else if (error.message?.includes("network")) {
+        errorMessage = "Network error. Please check your connection.";
+      }
+
+      toast.error(errorMessage, {
+        id: loadingToast,
+        duration: 5000,
+        position: "top-right",
+      });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Get category display name
+  const getCategoryLabel = (value: string) => {
+    return CATEGORIES.find((c) => c.value === value)?.label || value;
   };
 
   return (
@@ -131,7 +197,7 @@ export const AdminProductForm = () => {
             type="file"
             accept="image/*"
             onChange={handleImageChange}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-[#B88E2F] hover:file:bg-[#B88E2F]/20 cursor-pointer"
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-primary hover:file:bg-primary/20 cursor-pointer"
           />
         </div>
       </div>
@@ -150,7 +216,7 @@ export const AdminProductForm = () => {
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#B88E2F]"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
@@ -170,7 +236,7 @@ export const AdminProductForm = () => {
           required
           min="0"
           step="0.01"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#B88E2F]"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
@@ -187,14 +253,20 @@ export const AdminProductForm = () => {
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#B88E2F]"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="">Select a category</option>
-          <option value="furniture">Furniture</option>
-          <option value="electronics">Electronics</option>
-          <option value="accessories">Accessories</option>
-          <option value="clothing">Clothing</option>
+          {CATEGORIES.map((cat) => (
+            <option key={cat.value} value={cat.value}>
+              {cat.label} - {cat.description}
+            </option>
+          ))}
         </select>
+        {category && (
+          <p className="mt-1 text-xs text-gray-500">
+            Selected: {getCategoryLabel(category)}
+          </p>
+        )}
       </div>
 
       {/* Description */}
@@ -211,17 +283,25 @@ export const AdminProductForm = () => {
           onChange={(e) => setDescription(e.target.value)}
           required
           rows={4}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#B88E2F]"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+          placeholder="Describe your product in detail..."
         />
       </div>
 
-      {/* Submit Button */}
+      {/* Submit Button with Spinner */}
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full bg-[#B88E2F] text-white py-2 px-4 rounded-md hover:bg-[#B88E2F]/80 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary/80 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        {isSubmitting ? "Creating Product..." : "Create Product"}
+        {isSubmitting ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Creating Product...
+          </>
+        ) : (
+          "Create Product"
+        )}
       </button>
     </form>
   );

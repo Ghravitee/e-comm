@@ -265,10 +265,10 @@ const EditProductForm = ({
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
           >
             <option value="">Select category</option>
-            <option value="furniture">Furniture</option>
-            <option value="electronics">Electronics</option>
+            <option value="living-room">Living Room</option>
+            <option value="dining">Dining</option>
+            <option value="bedroom">Bedroom</option>
             <option value="accessories">Accessories</option>
-            <option value="clothing">Clothing</option>
           </select>
         </div>
       </div>

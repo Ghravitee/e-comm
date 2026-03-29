@@ -1,73 +1,81 @@
-import { useState } from "react";
+// features/products/pages/Shop.tsx
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ProductGrid } from "../components/ProductGrid";
 import { useProducts } from "../hooks/useProducts";
 import { Container } from "../../../shared/components/Container";
-import { Filter, X, ChevronDown } from "lucide-react";
+import { Filter, X, ChevronDown, Search } from "lucide-react";
 
 const Shop = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlSearchQuery = searchParams.get("search") || "";
+  const urlCategory = searchParams.get("category") || "all";
+
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage, setProductsPerPage] = useState(12);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(urlSearchQuery);
 
   // Filter states
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>(urlCategory);
   const [sortBy, setSortBy] = useState<string>("default");
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({
     min: 0,
     max: 1000000,
   });
 
-  const { data: products, isLoading, error } = useProducts();
+  // Use the API with all filters
+  const {
+    data: products,
+    isLoading,
+    error,
+  } = useProducts({
+    search: searchQuery || undefined,
+    category: selectedCategory !== "all" ? selectedCategory : undefined,
+    minPrice: priceRange.min > 0 ? priceRange.min : undefined,
+    maxPrice: priceRange.max < 1000000 ? priceRange.max : undefined,
+    sortBy: sortBy !== "default" ? sortBy : undefined,
+  });
 
-  // Get unique categories from products
+  // Sync category with URL
+  useEffect(() => {
+    if (selectedCategory !== "all" && selectedCategory !== urlCategory) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("category", selectedCategory);
+      setSearchParams(newParams);
+    } else if (selectedCategory === "all" && urlCategory !== "all") {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("category");
+      setSearchParams(newParams);
+    }
+  }, [selectedCategory, setSearchParams, urlCategory, searchParams]);
+
+  // Sync search query with URL
+  useEffect(() => {
+    if (searchQuery && searchQuery !== urlSearchQuery) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("search", searchQuery);
+      setSearchParams(newParams);
+    } else if (!searchQuery && urlSearchQuery) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("search");
+      setSearchParams(newParams);
+    }
+  }, [searchQuery, setSearchParams, urlSearchQuery, searchParams]);
+
+  // Get unique categories from products for filter sidebar
   const categories = products
     ? ["all", ...new Set(products.map((p) => p.category).filter(Boolean))]
     : ["all"];
 
-  // Apply filters and sorting
-  const filteredProducts = products
-    ? products.filter((product) => {
-        // Category filter
-        if (
-          selectedCategory !== "all" &&
-          product.category !== selectedCategory
-        ) {
-          return false;
-        }
-
-        // Price range filter
-        if (product.price < priceRange.min || product.price > priceRange.max) {
-          return false;
-        }
-
-        return true;
-      })
-    : [];
-
-  // Apply sorting
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    switch (sortBy) {
-      case "price-asc":
-        return a.price - b.price;
-      case "price-desc":
-        return b.price - a.price;
-      case "name-asc":
-        return a.name.localeCompare(b.name);
-      case "name-desc":
-        return b.name.localeCompare(a.name);
-      default:
-        return 0;
-    }
-  });
-
   // Calculate pagination
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = sortedProducts.slice(
+  const currentProducts = products?.slice(
     indexOfFirstProduct,
     indexOfLastProduct,
   );
-  const totalPages = Math.ceil(sortedProducts.length / productsPerPage);
+  const totalPages = Math.ceil((products?.length || 0) / productsPerPage);
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -76,7 +84,7 @@ const Shop = () => {
 
   const handleProductsPerPageChange = (value: number) => {
     setProductsPerPage(value);
-    setCurrentPage(1); // Reset to first page when changing items per page
+    setCurrentPage(1);
   };
 
   const handlePriceRangeChange = (type: "min" | "max", value: number) => {
@@ -89,6 +97,22 @@ const Shop = () => {
     setSortBy("default");
     setPriceRange({ min: 0, max: 1000000 });
     setCurrentPage(1);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    resetFilters();
+  };
+
+  // Get display name for category
+  const getCategoryDisplayName = (category: string) => {
+    const names: Record<string, string> = {
+      "living-room": "Living Room",
+      dining: "Dining",
+      bedroom: "Bedroom",
+      accessories: "Accessories",
+    };
+    return names[category] || category;
   };
 
   if (error) {
@@ -104,16 +128,51 @@ const Shop = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="h-[60vh] shop-bg w-full relative grid grid-cols-2"></section>
-
-      {/* Products Section */}
       <Container>
+        {/* Header */}
+        <div className="mb-12 pt-12">
+          <h1 className="text-4xl md:text-5xl tracking-wider font-light mb-4">
+            {selectedCategory !== "all"
+              ? getCategoryDisplayName(selectedCategory)
+              : searchQuery
+                ? `Search: "${searchQuery}"`
+                : "SHOP ALL"}
+          </h1>
+          <p className="text-neutral-600">
+            {products?.length || 0} products
+            {selectedCategory !== "all" &&
+              ` in ${getCategoryDisplayName(selectedCategory)}`}
+            {searchQuery && ` matching "${searchQuery}"`}
+          </p>
+        </div>
+
+        {/* Search Bar (mobile) */}
+        <div className="lg:hidden mt-4">
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search products..."
+              className="w-full px-4 py-2 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2"
+              >
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Filter Bar - Mobile Toggle */}
-        <div className="lg:hidden flex justify-between items-center my-4">
+        <div className="flex justify-between items-center my-4">
           <button
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200"
+            className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200"
           >
             <Filter className="w-5 h-5" />
             Filters
@@ -122,7 +181,7 @@ const Shop = () => {
             />
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ml-auto">
             <span className="text-sm text-gray-600">Show:</span>
             <select
               value={productsPerPage}
@@ -142,9 +201,7 @@ const Shop = () => {
         <div className="flex flex-col lg:flex-row gap-8 py-8">
           {/* Filters Sidebar */}
           <div
-            className={`lg:w-80 shrink-0 ${
-              isFilterOpen ? "block" : "hidden lg:block"
-            }`}
+            className={`lg:w-80 shrink-0 ${isFilterOpen ? "block" : "hidden lg:block"}`}
           >
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
               <div className="flex justify-between items-center mb-6">
@@ -155,6 +212,21 @@ const Shop = () => {
                 >
                   Reset All
                 </button>
+              </div>
+
+              {/* Search Bar (desktop) */}
+              <div className="mb-6 lg:hidden">
+                <h4 className="font-medium mb-3">Search</h4>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search products..."
+                    className="w-full px-4 py-2 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                </div>
               </div>
 
               {/* Categories */}
@@ -178,7 +250,9 @@ const Shop = () => {
                         className="text-primary focus:ring-primary"
                       />
                       <span className="text-gray-700 capitalize">
-                        {category === "all" ? "All Products" : category}
+                        {category === "all"
+                          ? "All Products"
+                          : getCategoryDisplayName(category)}
                       </span>
                     </label>
                   ))}
@@ -190,7 +264,9 @@ const Shop = () => {
                 <h4 className="font-medium mb-3">Price Range</h4>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm text-gray-600">Min Price</label>
+                    <label className="text-sm text-gray-600">
+                      Min Price (₦)
+                    </label>
                     <input
                       type="number"
                       value={priceRange.min}
@@ -198,11 +274,13 @@ const Shop = () => {
                         handlePriceRangeChange("min", Number(e.target.value))
                       }
                       className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="Min"
+                      placeholder="0"
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-600">Max Price</label>
+                    <label className="text-sm text-gray-600">
+                      Max Price (₦)
+                    </label>
                     <input
                       type="number"
                       value={priceRange.max}
@@ -210,7 +288,7 @@ const Shop = () => {
                         handlePriceRangeChange("max", Number(e.target.value))
                       }
                       className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="Max"
+                      placeholder="1,000,000"
                     />
                   </div>
                 </div>
@@ -239,48 +317,27 @@ const Shop = () => {
 
           {/* Products Area */}
           <div className="flex-1">
-            {/* Desktop Header with Controls */}
-            <div className="hidden lg:flex justify-between items-center mb-8">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  All Products
-                </h2>
-                <p className="text-gray-600 mt-1">
-                  Showing{" "}
-                  {sortedProducts.length > 0
-                    ? `${indexOfFirstProduct + 1}-${Math.min(indexOfLastProduct, sortedProducts.length)} of ${sortedProducts.length} products`
-                    : "0 products"}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-600">Show:</span>
-                <select
-                  value={productsPerPage}
-                  onChange={(e) =>
-                    handleProductsPerPageChange(Number(e.target.value))
-                  }
-                  className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
-                >
-                  <option value={12}>12</option>
-                  <option value={24}>24</option>
-                  <option value={48}>48</option>
-                  <option value={96}>96</option>
-                </select>
-              </div>
-            </div>
-
             {/* Active Filters */}
             {(selectedCategory !== "all" ||
               priceRange.min > 0 ||
-              priceRange.max < 1000000) && (
+              priceRange.max < 1000000 ||
+              searchQuery) && (
               <div className="flex flex-wrap gap-2 mb-6">
+                {searchQuery && (
+                  <button
+                    onClick={clearSearch}
+                    className="flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm hover:bg-primary/20"
+                  >
+                    Search: "{searchQuery}"
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
                 {selectedCategory !== "all" && (
                   <button
                     onClick={() => setSelectedCategory("all")}
                     className="flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm hover:bg-primary/20"
                   >
-                    Category: {selectedCategory}
+                    Category: {getCategoryDisplayName(selectedCategory)}
                     <X className="w-3 h-3" />
                   </button>
                 )}
@@ -291,6 +348,18 @@ const Shop = () => {
                   >
                     Price: ₦{priceRange.min.toLocaleString()} - ₦
                     {priceRange.max.toLocaleString()}
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+                {(selectedCategory !== "all" ||
+                  priceRange.min > 0 ||
+                  priceRange.max < 1000000 ||
+                  searchQuery) && (
+                  <button
+                    onClick={resetFilters}
+                    className="flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200"
+                  >
+                    Clear All
                     <X className="w-3 h-3" />
                   </button>
                 )}
@@ -309,7 +378,7 @@ const Shop = () => {
                   </div>
                 ))}
               </div>
-            ) : sortedProducts.length === 0 ? (
+            ) : products?.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500 text-lg">No products found</p>
                 <button
@@ -321,7 +390,7 @@ const Shop = () => {
               </div>
             ) : (
               <>
-                <ProductGrid products={currentProducts} />
+                <ProductGrid products={currentProducts || []} />
 
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
