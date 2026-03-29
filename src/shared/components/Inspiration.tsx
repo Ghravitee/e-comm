@@ -66,11 +66,11 @@ const Inspiration = () => {
             <img
               src={images[currentIndex].imageUrl}
               alt={images[currentIndex].title}
-              className="w-full h-[550px] object-cover transition-transform duration-700 hover:scale-105"
+              className="w-full h-137.5 object-cover transition-transform duration-700 hover:scale-105"
             />
 
             {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
 
             {/* Title Overlay */}
             <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
