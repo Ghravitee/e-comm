@@ -23,7 +23,7 @@ import {
   Calendar,
   MessageSquare,
 } from "lucide-react";
-import { SMSHistory } from "../components/SMSHistory";
+// import { SMSHistory } from "../components/SMSHistory";
 import { format } from "date-fns";
 
 type OrderStatus =
@@ -652,7 +652,7 @@ export const AdminOrdersPage: React.FC = () => {
             )}
           </div>
         ) : (
-          <SMSHistory />
+          <div>No orders found</div>
         )}
       </Container>
     </div>
