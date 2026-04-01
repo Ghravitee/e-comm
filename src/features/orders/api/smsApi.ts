@@ -1,12 +1,8 @@
 // features/orders/api/smsApi.ts
-// Free SMS simulation for portfolio/demo
 
-interface SMSMessage {
-  to: string;
-  message: string;
-  orderNumber: string;
-  status: string;
-}
+// Track sent SMS with timestamp and count
+export const sentSMSLog: Map<string, { timestamp: number; count: number }> =
+  new Map();
 
 // Status message templates
 const statusMessages = {
@@ -29,10 +25,6 @@ const statusMessages = {
     `❌ GreenCart: Order #${orderNumber} has been cancelled. If this was a mistake, please contact support.`,
 };
 
-// Store sent messages for demo (shows in UI)
-export const sentSMSLog: SMSMessage[] = [];
-
-// Send SMS (simulated for portfolio)
 export const sendOrderStatusSMS = async (params: {
   to: string;
   orderNumber: string;
@@ -41,6 +33,33 @@ export const sendOrderStatusSMS = async (params: {
 }): Promise<boolean> => {
   const { to, orderNumber, status, customerName } = params;
 
+  // Create a unique key for this SMS
+  const smsKey = `${orderNumber}-${status}`;
+  const now = Date.now();
+  const lastEntry = sentSMSLog.get(smsKey);
+
+  // Prevent sending the same status SMS more than once per 30 seconds
+  if (lastEntry) {
+    const timeSinceLast = now - lastEntry.timestamp;
+    if (timeSinceLast < 30000) {
+      console.log(
+        `Skipping duplicate SMS for ${smsKey} - sent ${timeSinceLast}ms ago`,
+      );
+      return false;
+    }
+  }
+
+  // Store that we're sending this SMS
+  sentSMSLog.set(smsKey, {
+    timestamp: now,
+    count: (lastEntry?.count || 0) + 1,
+  });
+
+  // Clean old entries after 1 minute
+  setTimeout(() => {
+    sentSMSLog.delete(smsKey);
+  }, 60000);
+
   const message =
     statusMessages[status as keyof typeof statusMessages]?.(
       orderNumber,
@@ -48,7 +67,6 @@ export const sendOrderStatusSMS = async (params: {
     ) ||
     `GreenCart: Your order #${orderNumber} status has been updated to ${status}.`;
 
-  // Log to console for development
   console.log("📱 SMS Notification:");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log(`To: ${to}`);
@@ -57,30 +75,5 @@ export const sendOrderStatusSMS = async (params: {
   console.log(`Message: ${message}`);
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-  // Store in memory for UI display
-  sentSMSLog.unshift({
-    to,
-    message,
-    orderNumber,
-    status,
-  });
-
-  // Keep only last 50 messages
-  if (sentSMSLog.length > 50) sentSMSLog.pop();
-
-  // In a real implementation with Twilio, we would:
-  // const twilioClient = require('twilio');
-  // await twilioClient.messages.create({
-  //   body: message,
-  //   to: to,
-  //   from: process.env.TWILIO_PHONE_NUMBER
-  // });
-
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
   return true;
 };
-
-// Get SMS history (for admin UI)
-export const getSMSHistory = () => sentSMSLog;

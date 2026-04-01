@@ -36,3 +36,6 @@ export const useSearchSuggestions = (query: string) => {
     staleTime: 1000 * 30,
   });
 };
+
+// Debouncing prevents a network request on every keystroke. I delay updating the query by 300ms and cancel the timer
+// if the user keeps typing. Only when they pause does the actual search fire — reducing Supabase calls dramatically.

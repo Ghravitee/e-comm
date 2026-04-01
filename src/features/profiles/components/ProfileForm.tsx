@@ -148,7 +148,6 @@ export const ProfileForm = ({ profile }: Props) => {
                   : hasChanges
                     ? "Update Profile"
                     : "Profile Complete"}
-                const isProfileComplete
               </span>
 
               {!isPending && hasChanges && <ArrowRight size={18} />}

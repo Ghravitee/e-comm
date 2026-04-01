@@ -18,3 +18,8 @@ export const useProducts = (params?: UseProductsParams) => {
     staleTime: 1000 * 60,
   });
 };
+
+// The query key includes the full params object so React Query treats every
+// unique filter combination as a separate cache entry. Filtering
+// by bedroom and then switching to dining hits the cache for dining
+// if you've been there before — no extra network request.

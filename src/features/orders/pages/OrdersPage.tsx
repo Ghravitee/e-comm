@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useOrderStore } from "../store/useOrderStore";
 import { useAuth } from "../../auth/hooks/useAuth";
+// import { useRealtimeOrders } from "../hooks/useRealtimeOrders";
 import { Container } from "../../../shared/components/Container";
 import { OrderCard } from "../components/OrderCard";
 import {
@@ -13,9 +14,12 @@ import {
   CheckCircle,
   Truck,
   XCircle,
+  RefreshCw,
 } from "lucide-react";
+import toast from "react-hot-toast";
+import { devError } from "../../../shared/utils/logger";
 
-// Status definitions with explanations
+// Status definitions with explanations (same as before)
 const statusDefinitions = {
   pending: {
     label: "Pending",
@@ -103,19 +107,44 @@ export const OrdersPage: React.FC = () => {
   const { orders, isLoading, error, loadOrders, hasLoaded } = useOrderStore();
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Load orders on initial mount
   useEffect(() => {
     if (user && !hasLoaded) {
       loadOrders(user.id, false);
     }
   }, [user, loadOrders, hasLoaded]);
 
+  // Handle manual refresh
+  const handleRefresh = async () => {
+    if (!user) return;
+
+    setIsRefreshing(true);
+    try {
+      await loadOrders(user.id, false);
+      toast.success("Orders refreshed!", {
+        duration: 2000,
+        position: "top-right",
+      });
+    } catch (err) {
+      devError("Failed to refresh orders. Please try again.", err);
+      toast.error("Failed to refresh orders. Please try again.", {
+        duration: 3000,
+        position: "top-right",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const filteredOrders = orders.filter((order) => {
     if (activeFilter === "all") return true;
     return order.status === activeFilter;
   });
 
-  if (isLoading) {
+  // Loading state (initial load)
+  if (isLoading && !hasLoaded) {
     return (
       <Container>
         <div className="py-16">
@@ -174,7 +203,7 @@ export const OrdersPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <Container>
-        {/* Header with Info */}
+        {/* Header with Info and Refresh Button */}
         <div className="mb-8">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
@@ -189,13 +218,28 @@ export const OrdersPage: React.FC = () => {
               </div>
             </div>
 
-            <Link
-              to="/shop"
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              Continue Shopping
-            </Link>
+            <div className="flex items-center gap-3">
+              {/* Refresh Button */}
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh orders"
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+                <span className="text-sm">Refresh</span>
+              </button>
+
+              <Link
+                to="/shop"
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Continue Shopping
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -313,20 +357,28 @@ export const OrdersPage: React.FC = () => {
             </Link>
           </div>
         ) : (
-          <div className="space-y-4">
-            {filteredOrders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                isExpanded={selectedOrderId === order.id}
-                onToggle={() =>
-                  setSelectedOrderId(
-                    selectedOrderId === order.id ? null : order.id,
-                  )
-                }
-              />
-            ))}
-          </div>
+          <>
+            {/* Optional: Show last updated time */}
+            {orders.length > 0 && (
+              <div className="text-right text-xs text-gray-400 mb-2">
+                {isRefreshing ? "Refreshing..." : `${orders.length} orders`}
+              </div>
+            )}
+            <div className="space-y-4">
+              {filteredOrders.map((order) => (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  isExpanded={selectedOrderId === order.id}
+                  onToggle={() =>
+                    setSelectedOrderId(
+                      selectedOrderId === order.id ? null : order.id,
+                    )
+                  }
+                />
+              ))}
+            </div>
+          </>
         )}
       </Container>
     </div>

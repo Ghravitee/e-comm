@@ -24,6 +24,8 @@ export const useUpdateProduct = () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({
         queryKey: ["product", updatedProduct.id],
+        // It invalidates both the list cache AND the individual product cache —
+        // so the product details page also updates immediately.
       });
     },
   });

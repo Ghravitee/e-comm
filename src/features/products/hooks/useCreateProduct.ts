@@ -2,23 +2,27 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createProduct } from "../api/createProduct";
 import type { CreateProductInput } from "../api/createProduct";
+import { devError, devLog } from "../../../shared/utils/logger";
 
 export const useCreateProduct = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (productData: CreateProductInput) => {
-      console.log("useCreateProduct mutationFn called with:", productData);
+      devLog("useCreateProduct mutationFn called with:", productData);
       const result = await createProduct(productData);
-      console.log("useCreateProduct result:", result);
+      devLog("useCreateProduct result:", result);
       return result;
     },
     onSuccess: (data) => {
-      console.log("Product created successfully:", data);
+      devLog("Product created successfully:", data);
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (error) => {
-      console.error("Product creation error:", error);
+      devError("Product creation error:", error);
     },
   });
 };
+
+// After any write operation, the products cache is invalidated — forcing React Query to refetch.
+// This ensures the UI always reflects the latest database state after a create, update, or delete.

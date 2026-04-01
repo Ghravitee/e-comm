@@ -2,11 +2,15 @@
 import React from "react";
 import { useFavorites } from "../hooks/useFavorites";
 import { ProductGrid } from "../../products/components/ProductGrid";
+import { ProductRatingsProvider } from "../../products/context/ProductRatingsProvider";
 import { Container } from "../../../shared/components/Container";
 import { Heart } from "lucide-react";
 
 export const FavoritesPage: React.FC = () => {
   const { favorites, isLoading, error } = useFavorites();
+
+  const products = favorites.map((f) => f.product);
+  const productIds = products.map((p) => p.id);
 
   if (isLoading) {
     return (
@@ -36,8 +40,6 @@ export const FavoritesPage: React.FC = () => {
     );
   }
 
-  const products = favorites.map((f) => f.product);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Container>
@@ -56,7 +58,9 @@ export const FavoritesPage: React.FC = () => {
               </p>
             </div>
           ) : (
-            <ProductGrid products={products} />
+            <ProductRatingsProvider productIds={productIds}>
+              <ProductGrid products={products} />
+            </ProductRatingsProvider>
           )}
         </div>
       </Container>

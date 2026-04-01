@@ -1,6 +1,8 @@
+// features/products/components/FeaturedProducts.tsx
 import React from "react";
 import { useProducts } from "../../features/products/hooks/useProducts";
 import { ProductGrid } from "../../features/products/components/ProductGrid";
+import { ProductRatingsProvider } from "../../features/products/context/ProductRatingsProvider";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -38,6 +40,7 @@ const FeaturedProducts: React.FC = () => {
 
   // Get first 8 products for featured section
   const featuredProducts = products?.slice(0, 8);
+  const productIds = featuredProducts?.map((p) => p.id) || [];
 
   // Loading State with Skeletons
   if (isLoading) {
@@ -123,7 +126,9 @@ const FeaturedProducts: React.FC = () => {
         </p>
       </div>
 
-      <ProductGrid products={featuredProducts || []} />
+      <ProductRatingsProvider productIds={productIds}>
+        <ProductGrid products={featuredProducts || []} />
+      </ProductRatingsProvider>
 
       <div className="text-center mt-12">
         <Link

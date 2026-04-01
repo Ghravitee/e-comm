@@ -1,10 +1,10 @@
 // shared/components/ProtectedRoute.tsx
 
-import { Outlet } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../features/auth/hooks/useAuth";
 
 export const ProtectedRoute = () => {
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
 
   if (loading) {
     return (
@@ -14,15 +14,15 @@ export const ProtectedRoute = () => {
     );
   }
 
-  // if (!user) {
-  //   return (
-  //     <Navigate
-  //       to="/signin"
-  //       state={{ from: window.location.pathname }}
-  //       replace
-  //     />
-  //   );
-  // }
+  if (!user) {
+    return (
+      <Navigate
+        to="/signin"
+        state={{ from: window.location.pathname }}
+        replace
+      />
+    );
+  }
 
   return <Outlet />;
 };

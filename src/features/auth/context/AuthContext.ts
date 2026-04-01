@@ -1,4 +1,5 @@
 import { createContext } from "react";
+import type { User } from "@supabase/supabase-js";
 
 export type Profile = {
   id: string;
@@ -8,8 +9,7 @@ export type Profile = {
 };
 
 export type AuthContextType = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  user: any;
+  user: User | null;
   profile: Profile | null;
   isAdmin: boolean | undefined;
   loading: boolean;

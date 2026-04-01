@@ -1,9 +1,10 @@
 // features/products/pages/Shop.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ProductGrid } from "../components/ProductGrid";
 import { useProducts } from "../hooks/useProducts";
 import { Container } from "../../../shared/components/Container";
+import { ProductRatingsProvider } from "../context/ProductRatingsProvider";
 import { Filter, X, ChevronDown, Search } from "lucide-react";
 
 const Shop = () => {
@@ -36,6 +37,12 @@ const Shop = () => {
     maxPrice: priceRange.max < 1000000 ? priceRange.max : undefined,
     sortBy: sortBy !== "default" ? sortBy : undefined,
   });
+
+  // Extract product IDs for the ratings provider
+  const productIds = useMemo(
+    () => products?.map((product) => product.id) || [],
+    [products],
+  );
 
   // Sync category with URL
   useEffect(() => {
@@ -389,78 +396,79 @@ const Shop = () => {
                 </button>
               </div>
             ) : (
-              <>
+              // Wrap ProductGrid with ProductRatingsProvider
+              <ProductRatingsProvider productIds={productIds}>
                 <ProductGrid products={currentProducts || []} />
+              </ProductRatingsProvider>
+            )}
 
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="flex justify-center items-center gap-2 mt-12">
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className={`px-4 py-2 rounded-lg border transition-colors ${
-                        currentPage === 1
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
-                          : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
-                      }`}
-                    >
-                      Previous
-                    </button>
+            {/* Pagination Controls */}
+            {!isLoading && totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-12">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-4 py-2 rounded-lg border transition-colors ${
+                    currentPage === 1
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
+                      : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                  }`}
+                >
+                  Previous
+                </button>
 
-                    <div className="flex gap-2">
-                      {[...Array(totalPages)].map((_, index) => {
-                        const pageNumber = index + 1;
-                        if (
-                          pageNumber === 1 ||
-                          pageNumber === totalPages ||
-                          (pageNumber >= currentPage - 1 &&
-                            pageNumber <= currentPage + 1)
-                        ) {
-                          return (
-                            <button
-                              key={pageNumber}
-                              onClick={() => handlePageChange(pageNumber)}
-                              className={`w-10 h-10 rounded-lg border transition-colors ${
-                                currentPage === pageNumber
-                                  ? "bg-primary text-white border-primary"
-                                  : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
-                              }`}
-                            >
-                              {pageNumber}
-                            </button>
-                          );
-                        }
-                        if (
-                          pageNumber === currentPage - 2 ||
-                          pageNumber === currentPage + 2
-                        ) {
-                          return (
-                            <span
-                              key={pageNumber}
-                              className="w-10 h-10 flex items-center justify-center text-gray-400"
-                            >
-                              ...
-                            </span>
-                          );
-                        }
-                        return null;
-                      })}
-                    </div>
+                <div className="flex gap-2">
+                  {[...Array(totalPages)].map((_, index) => {
+                    const pageNumber = index + 1;
+                    if (
+                      pageNumber === 1 ||
+                      pageNumber === totalPages ||
+                      (pageNumber >= currentPage - 1 &&
+                        pageNumber <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={pageNumber}
+                          onClick={() => handlePageChange(pageNumber)}
+                          className={`w-10 h-10 rounded-lg border transition-colors ${
+                            currentPage === pageNumber
+                              ? "bg-primary text-white border-primary"
+                              : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                          }`}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    }
+                    if (
+                      pageNumber === currentPage - 2 ||
+                      pageNumber === currentPage + 2
+                    ) {
+                      return (
+                        <span
+                          key={pageNumber}
+                          className="w-10 h-10 flex items-center justify-center text-gray-400"
+                        >
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
 
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className={`px-4 py-2 rounded-lg border transition-colors ${
-                        currentPage === totalPages
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
-                          : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
-                      }`}
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
-              </>
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-4 py-2 rounded-lg border transition-colors ${
+                    currentPage === totalPages
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
+                      : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
             )}
           </div>
         </div>

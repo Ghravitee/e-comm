@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // features/profiles/api/profiles.ts
 import { supabase } from "../../../services/supabase/client";
 import type { Profile, UpdateProfileData } from "../types";
 
-export const fetchProfileById = async (
-  userId: string,
-): Promise<Profile | null> => {
+// Throw error instead of returning null
+export const fetchProfileById = async (userId: string): Promise<Profile> => {
   const { data, error } = await supabase
     .from("profiles")
     .select(
@@ -16,24 +14,35 @@ export const fetchProfileById = async (
 
   if (error) {
     console.error("Error fetching profile:", error);
-    return null;
+    throw new Error(`Failed to fetch profile: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error(`Profile not found for user: ${userId}`);
   }
 
   return data as Profile;
 };
 
-// features/profiles/api/profiles.ts
+// ✅ FIXED: Consistent - always throws on error
 export const updateProfile = async (
   data: UpdateProfileData,
 ): Promise<Profile> => {
   // Get current user
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
 
-  if (!user) throw new Error("Not authenticated");
+  if (userError) {
+    throw new Error(`Authentication error: ${userError.message}`);
+  }
 
-  const updates: any = {
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  const updates: Partial<Profile> = {
     full_name: data.full_name,
     updated_at: new Date().toISOString(),
   };
@@ -47,7 +56,9 @@ export const updateProfile = async (
       .from("avatars")
       .upload(fileName, data.avatar_file, { upsert: true });
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      throw new Error(`Failed to upload avatar: ${uploadError.message}`);
+    }
 
     const { data: urlData } = supabase.storage
       .from("avatars")
@@ -60,38 +71,55 @@ export const updateProfile = async (
     .update(updates)
     .eq("id", user.id);
 
-  if (updateError) throw updateError;
+  if (updateError) {
+    throw new Error(`Failed to update profile: ${updateError.message}`);
+  }
 
-  // Return updated profile
+  // Return updated profile - this will throw if fetch fails
   const updatedProfile = await fetchProfileById(user.id);
-  if (!updatedProfile) throw new Error("Failed to fetch updated profile");
-
   return updatedProfile;
 };
 
+// ✅ FIXED: Consistent - always throws on error
 export const deleteAvatar = async (userId: string): Promise<void> => {
-  // Get current profile to find avatar URL
-  const profile = await fetchProfileById(userId);
+  try {
+    // Get current profile to find avatar URL
+    const profile = await fetchProfileById(userId);
 
-  if (profile?.avatar_url) {
-    // Extract file path from URL
-    const urlParts = profile.avatar_url.split("/");
-    const filePath = urlParts.slice(urlParts.indexOf("avatars") + 1).join("/");
+    if (profile?.avatar_url) {
+      // Extract file path from URL
+      const urlParts = profile.avatar_url.split("/");
+      const filePath = urlParts
+        .slice(urlParts.indexOf("avatars") + 1)
+        .join("/");
 
-    if (filePath) {
-      await supabase.storage.from("avatars").remove([filePath]);
+      if (filePath) {
+        const { error: removeError } = await supabase.storage
+          .from("avatars")
+          .remove([filePath]);
+
+        if (removeError) {
+          throw new Error(`Failed to remove avatar: ${removeError.message}`);
+        }
+      }
     }
+
+    // Update profile to remove avatar_url
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: null })
+      .eq("id", userId);
+
+    if (updateError) {
+      throw new Error(`Failed to update profile: ${updateError.message}`);
+    }
+  } catch (error) {
+    console.error("Error in deleteAvatar:", error);
+    throw error; // Re-throw to let caller handle it
   }
-
-  // Update profile to remove avatar_url
-  const { error } = await supabase
-    .from("profiles")
-    .update({ avatar_url: null })
-    .eq("id", userId);
-
-  if (error) throw error;
 };
 
+// ✅ FIXED: Throw error instead of returning empty array
 export const fetchAdmins = async (): Promise<Profile[]> => {
   const { data, error } = await supabase
     .from("profiles")
@@ -100,16 +128,19 @@ export const fetchAdmins = async (): Promise<Profile[]> => {
 
   if (error) {
     console.error("Failed to fetch admins:", error);
-    return [];
+    throw new Error(`Failed to fetch admins: ${error.message}`);
   }
 
   return data as Profile[];
 };
 
+// ✅ Already correct - throws error
 export const changePassword = async (newPassword: string): Promise<void> => {
   const { error } = await supabase.auth.updateUser({
     password: newPassword,
   });
 
-  if (error) throw error;
+  if (error) {
+    throw new Error(`Failed to change password: ${error.message}`);
+  }
 };

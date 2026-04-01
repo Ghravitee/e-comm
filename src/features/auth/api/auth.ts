@@ -4,14 +4,35 @@ import { supabase } from "../../../services/supabase/client";
 export interface SignUpData {
   email: string;
   password: string;
-  fullName?: string;
-  avatarFile?: File;
 }
 
+export const checkUserExistsDB = async (email: string): Promise<boolean> => {
+  const { data, error } = await supabase.rpc("check_user_exists", {
+    user_email: email,
+  });
+
+  if (error) {
+    console.error("Error checking user existence:", error);
+    return false;
+  }
+
+  return data || false;
+};
+
 export const signUp = async ({ email, password }: SignUpData) => {
+  // Check if user already exists in auth.users
+  const exists = await checkUserExistsDB(email);
+
+  if (exists) {
+    throw new Error("User already registered");
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      emailRedirectTo: `${window.location.origin}/auth/callback`,
+    },
   });
 
   if (error) throw error;
@@ -29,7 +50,7 @@ export const signIn = async (email: string, password: string) => {
   return data;
 };
 
-// Google OAuth - Popup mode (stays on same page)
+// Google OAuth
 export const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -40,19 +61,6 @@ export const signInWithGoogle = async () => {
         access_type: "offline",
         prompt: "consent",
       },
-    },
-  });
-
-  if (error) throw error;
-  return data;
-};
-
-// Alternative: Sign in with Google using popup (handles the popup window)
-export const signInWithGooglePopup = async () => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
     },
   });
 

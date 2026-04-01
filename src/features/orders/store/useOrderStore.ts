@@ -9,11 +9,11 @@ import type {
 } from "../types";
 import {
   getUserOrders,
-  getAllOrders, // Add this import
+  getAllOrders,
   getOrderById,
   createOrder,
   updateOrderStatus,
-  updateOrderStatusAdmin, // Add this import
+  updateOrderStatusAdmin,
   getSavedAddresses,
   saveAddress,
   updateAddress,
@@ -30,7 +30,11 @@ interface OrderState {
   hasLoaded: boolean;
 
   // Actions
-  loadOrders: (userId: string, isAdmin?: boolean) => Promise<void>; // Add isAdmin param
+  loadOrders: (
+    userId: string,
+    isAdmin?: boolean,
+    force?: boolean,
+  ) => Promise<void>; // Add force parameter
   loadOrder: (orderId: string, userId: string) => Promise<void>;
   placeOrder: (
     userId: string,
@@ -41,7 +45,7 @@ interface OrderState {
     orderId: string,
     userId: string,
     status: any,
-    isAdmin?: boolean, // Add isAdmin param
+    isAdmin?: boolean,
   ) => Promise<void>;
 
   loadAddresses: (userId: string) => Promise<void>;
@@ -68,18 +72,21 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   error: null,
   hasLoaded: false,
 
-  // Updated to handle both user and admin orders
-  loadOrders: async (userId: string, isAdmin: boolean = false) => {
-    if (get().hasLoaded) return;
+  // Updated to handle force refresh
+  loadOrders: async (
+    userId: string,
+    isAdmin: boolean = false,
+    force: boolean = false,
+  ) => {
+    // Skip loading if already loaded and not forcing refresh
+    if (get().hasLoaded && !force) return;
 
     set({ isLoading: true, error: null });
     try {
       let orders;
       if (isAdmin) {
-        // Admin sees ALL orders
         orders = await getAllOrders();
       } else {
-        // Regular user sees only their orders
         orders = await getUserOrders(userId);
       }
       set({ orders, isLoading: false, hasLoaded: true });
@@ -118,13 +125,23 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
   },
 
-  // Updated to handle both user and admin status updates
   updateOrderStatus: async (
     orderId: string,
     userId: string,
     status: any,
     isAdmin: boolean = false,
   ) => {
+    // Get current order to check if status actually changed
+    const currentOrder = get().orders.find((o) => o.id === orderId);
+
+    // If status hasn't changed, skip update
+    if (currentOrder && currentOrder.status === status) {
+      console.log(
+        `Order ${orderId} already has status ${status}, skipping update`,
+      );
+      return;
+    }
+
     try {
       if (isAdmin) {
         await updateOrderStatusAdmin(orderId, status);
@@ -143,7 +160,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
             : state.currentOrder,
       }));
 
-      // Get the order to send SMS
+      // Send SMS only once
       const order = get().orders.find((o) => o.id === orderId);
       if (order && order.shipping_address.phone) {
         await sendOrderStatusSMS({

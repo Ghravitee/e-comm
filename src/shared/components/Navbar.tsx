@@ -55,10 +55,9 @@ export const Navbar: React.FC = () => {
   const handleLogout = async () => {
     try {
       await signOut();
-      toast.success("Successfully logged out! 👋", {
+      toast.success("Successfully logged out!", {
         duration: 3000,
-        position: "top-right",
-        icon: "👋",
+        position: "bottom-right",
       });
       setIsDropdownOpen(false);
       setIsMobileMenuOpen(false);
@@ -67,7 +66,7 @@ export const Navbar: React.FC = () => {
       console.error("Failed to log out:", error);
       toast.error("Failed to log out. Please try again.", {
         duration: 4000,
-        position: "top-right",
+        position: "bottom-right",
       });
     }
   };
@@ -141,10 +140,10 @@ export const Navbar: React.FC = () => {
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="text-gray-700 hover:text-[#b88e2f] transition-colors cursor-pointer text-sm lg:text-base font-medium relative group"
+                  className="text-gray-700 hover:text-primary transition-colors cursor-pointer text-sm lg:text-base font-medium relative group"
                 >
                   {link.label}
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#b88e2f] transition-all group-hover:w-full"></span>
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
                 </Link>
               ))}
             </div>

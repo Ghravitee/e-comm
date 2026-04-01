@@ -60,3 +60,7 @@ export const getProducts = async (
   if (error) throw error;
   return (data as Product[]) || [];
 };
+
+// Supabase's query builder uses method chaining — I build up filters conditionally
+// without executing until the final await. This means if no filters are passed,
+// I get all products. Each filter is optional and only applied when present.

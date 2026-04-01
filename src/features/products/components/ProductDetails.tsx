@@ -1,20 +1,29 @@
 // features/products/components/ProductDetails.tsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import { type Product } from "../types";
 import { useCartStore } from "../../cart/store/useCartStore";
-import { Heart, ShoppingCart, Minus, Plus, Check, Star } from "lucide-react";
+import {
+  Heart,
+  ShoppingCart,
+  Minus,
+  Plus,
+  Check,
+  Star,
+  Link,
+} from "lucide-react";
 import { useFavorites } from "../../favorites/hooks/useFavorites";
 import { RatingStars } from "../../reviews/components/RatingStars";
 import { ReviewCard } from "../../reviews/components/ReviewCard";
 import {
-  getProductReviews,
-  createReview,
-  hasUserReviewed,
-  getProductAverageRating,
-} from "../../reviews/api/reviewsApi";
+  useProductReviews,
+  useProductAverageRating,
+  useHasUserReviewed,
+  useCreateReview,
+  useHasUserPurchased,
+} from "../../reviews/hooks/useReviews";
 import { useAuth } from "../../auth/hooks/useAuth";
-import type { ReviewWithUser } from "../../reviews/types";
 import toast from "react-hot-toast";
+import { devError } from "../../../shared/utils/logger";
 
 interface Props {
   product: Product;
@@ -25,7 +34,8 @@ const ReviewFormSimple: React.FC<{
   productName: string;
   onSubmit: (rating: number, comment: string) => Promise<void>;
   onCancel: () => void;
-}> = ({ productName, onSubmit, onCancel }) => {
+  canReview?: boolean;
+}> = ({ productName, onSubmit, onCancel, canReview = true }) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -47,14 +57,28 @@ const ReviewFormSimple: React.FC<{
     setIsSubmitting(true);
     try {
       await onSubmit(rating, comment);
-      toast.success("Review submitted! Thank you!");
     } catch (error) {
-      console.error("Error submitting review:", error);
-      toast.error("Failed to submit review. Please try again.");
+      devError("Failed to submit review:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (!canReview) {
+    return (
+      <div className="bg-gray-50 rounded-xl p-6 text-center">
+        <p className="text-gray-500">
+          You can only review products you've purchased and received.
+        </p>
+        <Link
+          to="/orders"
+          className="text-primary hover:underline mt-2 inline-block"
+        >
+          View Your Orders
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="bg-gray-50 rounded-xl p-6">
@@ -127,69 +151,32 @@ export const ProductDetails: React.FC<Props> = ({ product }) => {
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
   const { toggleFavorite, isFavorite } = useFavorites();
 
-  // Reviews state
-  const [reviews, setReviews] = useState<ReviewWithUser[]>([]);
-  const [avgRating, setAvgRating] = useState({ avg: 0, count: 0 });
-  const [hasReviewed, setHasReviewed] = useState(false);
-  const [showReviewForm, setShowReviewForm] = useState(false);
-  const [isLoadingReviews, setIsLoadingReviews] = useState(true);
+  // React Query hooks for reviews
+  const { data: reviews, isLoading: isLoadingReviews } = useProductReviews(
+    product.id,
+  );
+  const { data: avgRating } = useProductAverageRating(product.id);
+  const { data: hasReviewed, isLoading: isLoadingUserReview } =
+    useHasUserReviewed(product.id, user?.id);
+  const { data: hasPurchased } = useHasUserPurchased(product.id, user?.id);
+
+  const createReviewMutation = useCreateReview();
 
   const isFav = isFavorite(product.id);
 
-  // Wrap loadReviews in useCallback
-  const loadReviews = useCallback(async () => {
-    try {
-      const data = await getProductReviews(product.id);
-      setReviews(data);
-    } catch (error) {
-      console.error("Failed to load reviews:", error);
-    } finally {
-      setIsLoadingReviews(false);
-    }
-  }, [product.id]);
-
-  // Wrap loadRating in useCallback
-  const loadRating = useCallback(async () => {
-    try {
-      const data = await getProductAverageRating(product.id);
-      setAvgRating(data);
-    } catch (error) {
-      console.error("Failed to load rating:", error);
-    }
-  }, [product.id]);
-
-  // Wrap checkUserReview in useCallback
-  const checkUserReview = useCallback(async () => {
-    if (!user) return;
-    try {
-      const hasReview = await hasUserReviewed(product.id, user.id);
-      setHasReviewed(hasReview);
-    } catch (error) {
-      console.error("Failed to check user review:", error);
-    }
-  }, [product.id, user]);
-
-  // Load reviews
-  useEffect(() => {
-    loadReviews();
-    loadRating();
-    if (user) {
-      checkUserReview();
-    }
-  }, [loadReviews, loadRating, checkUserReview, user]);
-
   const handleSubmitReview = async (rating: number, comment: string) => {
     if (!user) return;
-    await createReview(user.id, {
-      product_id: product.id,
-      rating,
-      comment,
+    await createReviewMutation.mutateAsync({
+      userId: user.id,
+      data: {
+        product_id: product.id,
+        rating,
+        comment,
+      },
     });
-    await loadReviews();
-    await loadRating();
-    setHasReviewed(true);
     setShowReviewForm(false);
   };
 
@@ -252,6 +239,9 @@ export const ProductDetails: React.FC<Props> = ({ product }) => {
     }
   };
 
+  const isUserLoading = isLoadingUserReview;
+  const hasUserReviewedValue = hasReviewed || false;
+
   return (
     <div className="space-y-12">
       {/* Product Info Section */}
@@ -287,7 +277,7 @@ export const ProductDetails: React.FC<Props> = ({ product }) => {
           </h1>
 
           {/* Rating Display */}
-          {avgRating.count > 0 && (
+          {avgRating && avgRating.count > 0 && (
             <div className="flex items-center gap-2 mt-2">
               <RatingStars rating={avgRating.avg} size={18} />
               <span className="text-sm text-gray-500">
@@ -473,7 +463,7 @@ export const ProductDetails: React.FC<Props> = ({ product }) => {
             <h2 className="text-xl md:text-2xl font-semibold text-gray-900">
               Customer Reviews
             </h2>
-            {avgRating.count > 0 && (
+            {avgRating && avgRating.count > 0 && (
               <div className="flex items-center justify-center sm:justify-start gap-2 mt-1">
                 <RatingStars rating={avgRating.avg} size={16} />
                 <span className="text-xs md:text-sm text-gray-500">
@@ -484,14 +474,33 @@ export const ProductDetails: React.FC<Props> = ({ product }) => {
             )}
           </div>
 
-          {user && !hasReviewed && !showReviewForm && (
-            <button
-              onClick={() => setShowReviewForm(true)}
-              className="bg-primary text-white px-6 py-2.5 rounded-lg hover:bg-primary/80 transition-colors text-sm md:text-base w-full sm:w-auto"
-            >
-              Write a Review
-            </button>
+          {user &&
+            !isUserLoading &&
+            !hasUserReviewedValue &&
+            !showReviewForm &&
+            hasPurchased && (
+              <button
+                onClick={() => setShowReviewForm(true)}
+                className="bg-primary text-white px-6 py-2.5 rounded-lg hover:bg-primary/80 transition-colors text-sm md:text-base w-full sm:w-auto"
+              >
+                Write a Review
+              </button>
+            )}
+
+          {user && !isUserLoading && !hasUserReviewedValue && !hasPurchased && (
+            <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+              <p className=" text-sm">
+                You can only review products you've purchased and received.
+              </p>
+            </div>
           )}
+
+          {/* <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+              <p className="text-sm text-red-700">{serverError}</p>
+            </div>
+          </div> */}
         </div>
 
         {showReviewForm && (
@@ -513,7 +522,7 @@ export const ProductDetails: React.FC<Props> = ({ product }) => {
                 </div>
               ))}
             </div>
-          ) : reviews.length === 0 ? (
+          ) : !reviews || reviews.length === 0 ? (
             <div className="text-center py-8 md:py-12 bg-gray-50 rounded-xl px-4">
               <p className="text-gray-500 text-sm md:text-base">
                 No reviews yet. Be the first to review this product!

@@ -190,7 +190,7 @@ const Contact = () => {
                 alt="Our Showroom"
               />
               {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/20 via-transparent to-transparent" />
               {/* Caption */}
               <div className="absolute bottom-0 left-0 right-0 p-4">
                 <p className="text-white font-medium">Our Showroom</p>

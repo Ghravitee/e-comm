@@ -2,6 +2,48 @@
 import { supabase } from "../../../services/supabase/client";
 import type { Review, CreateReviewData, ReviewWithUser } from "../types";
 
+export const getMultipleProductRatings = async (
+  productIds: string[],
+): Promise<Map<string, { avg: number; count: number }>> => {
+  if (!productIds.length) return new Map();
+
+  const { data, error } = await supabase
+    .from("product_reviews")
+    .select("product_id, rating")
+    .in("product_id", productIds);
+
+  if (error) throw error;
+
+  // Aggregate ratings by product
+  const ratingsMap = new Map<string, { sum: number; count: number }>();
+
+  data?.forEach((review) => {
+    const existing = ratingsMap.get(review.product_id);
+    if (existing) {
+      ratingsMap.set(review.product_id, {
+        sum: existing.sum + review.rating,
+        count: existing.count + 1,
+      });
+    } else {
+      ratingsMap.set(review.product_id, {
+        sum: review.rating,
+        count: 1,
+      });
+    }
+  });
+
+  // Convert to final format with averages
+  const result = new Map<string, { avg: number; count: number }>();
+  ratingsMap.forEach((value, productId) => {
+    result.set(productId, {
+      avg: value.sum / value.count,
+      count: value.count,
+    });
+  });
+
+  return result;
+};
+
 // Get all reviews for a product with user data
 export const getProductReviews = async (
   productId: string,
@@ -103,4 +145,39 @@ export const getProductAverageRating = async (
   const avg = sum / data.length;
 
   return { avg, count: data.length };
+};
+
+export const hasUserPurchasedProduct = async (
+  userId: string,
+  productId: string,
+): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from("order_items")
+    .select("order_id")
+    .eq("product_id", productId);
+
+  if (error) {
+    console.error("Error checking purchase:", error);
+    return false;
+  }
+
+  if (!data || data.length === 0) return false;
+
+  // Get the order IDs
+  const orderIds = data.map((item) => item.order_id);
+
+  // Check if any of these orders belong to the user and are delivered
+  const { data: orders, error: ordersError } = await supabase
+    .from("orders")
+    .select("id, status")
+    .in("id", orderIds)
+    .eq("user_id", userId)
+    .eq("status", "delivered");
+
+  if (ordersError) {
+    console.error("Error checking orders:", ordersError);
+    return false;
+  }
+
+  return orders && orders.length > 0;
 };

@@ -23,6 +23,7 @@ export const useProfile = () => {
   return {
     profile,
     loading: isLoading,
+    isAdmin: profile?.is_admin ?? false,
     error,
   };
 };

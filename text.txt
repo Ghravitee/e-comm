@@ -1,0 +1,25 @@
+30/03/2026
+
+Today I took a deep dive into the **App.tsx architecture** of my React e-commerce project.
+
+Instead of being just a file that renders components, `App.tsx` actually controls the **entire application structure**.
+
+Here are a few things happening inside it:
+
+• **Client-side routing** using React Router
+• **Code splitting** with React.lazy() to reduce bundle size
+• **Suspense boundaries** for loading states
+• **Protected routes** for authenticated users
+• **Admin routes** for role-based access control
+• **Global notifications** using react-hot-toast
+• **Cart persistence initialization** when the app loads
+
+One thing I realized while studying it:
+
+Good React architecture isn't just about components — it's about **how your application is structured and loaded**.
+
+Understanding this file helped me see how a production React app manages performance, security, and scalability.
+
+Next, I’ll be diving into the authentication layer and Supabase integration.
+
+#React #WebDevelopment #Frontend #ReactJS #LearningInPublic

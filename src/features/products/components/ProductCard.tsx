@@ -7,8 +7,7 @@ import { useFavorites } from "../../favorites/hooks/useFavorites";
 import { Heart, Check } from "lucide-react";
 import { BlurImage } from "../../../shared/components/BlurImage";
 import { RatingStars } from "../../reviews/components/RatingStars";
-import { getProductAverageRating } from "../../reviews/api/reviewsApi";
-import { useQuery } from "@tanstack/react-query";
+import { useProductRating } from "../hooks/useProductRating";
 import toast from "react-hot-toast";
 
 interface Props {
@@ -23,12 +22,10 @@ export const ProductCard: React.FC<Props> = ({ product }) => {
   const [showAddedFeedback, setShowAddedFeedback] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
 
-  // Get product rating
-  const { data: ratingData } = useQuery({
-    queryKey: ["product-rating", product.id],
-    queryFn: () => getProductAverageRating(product.id),
-    staleTime: 5 * 60 * 1000,
-  });
+  // Get product rating from context - NO MORE INDIVIDUAL QUERIES!
+  const { rating: ratingData, isLoading: isRatingLoading } = useProductRating(
+    product.id,
+  );
 
   // Get current quantity of this product in cart
   const cartItem = items.find((item) => item.id === product.id);
@@ -148,7 +145,7 @@ export const ProductCard: React.FC<Props> = ({ product }) => {
       </Link>
 
       {/* Rating Display */}
-      {ratingData && ratingData.count > 0 && (
+      {!isRatingLoading && ratingData && ratingData.count > 0 && (
         <div className="flex items-center gap-2 mt-1">
           <RatingStars rating={ratingData.avg} size={14} />
           <span className="text-xs text-gray-500">({ratingData.count})</span>

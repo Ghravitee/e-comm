@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { signUp, signInWithGoogle } from "../api/auth";
 import { validateEmail, validatePassword } from "../utils/validation";
@@ -20,6 +20,7 @@ export const SignUp: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const isSubmitting = useRef(false);
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,10 +76,13 @@ export const SignUp: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isSubmitting.current) return;
+
     if (!validateForm()) {
       return;
     }
 
+    isSubmitting.current = true;
     setIsLoading(true);
     setServerError(null);
 
@@ -91,7 +95,7 @@ export const SignUp: React.FC = () => {
       // Success toast
       toast.success("Account created successfully! 🎉", {
         duration: 5000,
-        position: "top-right",
+        position: "bottom-right",
         icon: "🎉",
       });
 
@@ -116,12 +120,13 @@ export const SignUp: React.FC = () => {
       // Error toast
       toast.error(errorMessage, {
         duration: 5000,
-        position: "top-right",
+        position: "bottom-right",
       });
 
       setServerError(errorMessage);
     } finally {
       setIsLoading(false);
+      isSubmitting.current = false;
     }
   };
 
@@ -133,7 +138,7 @@ export const SignUp: React.FC = () => {
       await signInWithGoogle();
 
       // Success toast for Google signup
-      toast.success("Successfully signed up with Google! 🚀", {
+      toast.success("Successfully signed up with Google!", {
         duration: 4000,
         position: "top-right",
       });
@@ -181,7 +186,7 @@ export const SignUp: React.FC = () => {
 
       {/* Left Column - Form */}
       <div className="bg-white p-4 lg:py-8 lg:px-20">
-        <div className="w-full max-w-md space-y-8 mb-8">
+        <div className="w-full max-w-md space-y-8 mb-4">
           <Link to="/" className="flex items-center space-x-2">
             <div className="w-10 h-10 bg-neutral-900 flex items-center justify-center">
               <span className="text-white font-serif text-xl">F</span>
@@ -189,7 +194,7 @@ export const SignUp: React.FC = () => {
             <span className="text-2xl tracking-widest font-light">FSJ</span>
           </Link>
           <div className="space-y-2">
-            <h1 className="text-3xl md:text-4xl tracking-wide font-light sec">
+            <h1 className="text-3xl md:text-4xl tracking-wide font-light">
               Create account
             </h1>
             <p className="text-neutral-600">Sign up to get started with FSJ</p>

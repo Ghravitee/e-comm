@@ -6,4 +6,5 @@ export type Product = {
   image: string;
   category: string;
   created_at: string;
+  updated_at: string;
 };

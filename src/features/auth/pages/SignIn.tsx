@@ -92,12 +92,15 @@ export const SignIn: React.FC = () => {
       // Success toast
       toast.success("Welcome back! You've successfully signed in.", {
         duration: 4000,
-        position: "top-right",
+        position: "bottom-right",
       });
 
       // Navigate after toast
       setTimeout(() => {
-        navigate("/", { replace: true });
+        // navigate("/", { replace: true });
+        // If a user visits /checkout, gets redirected to /signin,
+        // and logs in, they should land back on /checkout — not /
+        navigate(from, { replace: true });
       }, 500);
     } catch (err: any) {
       let errorMessage = "Failed to sign in. Please try again.";
@@ -126,14 +129,6 @@ export const SignIn: React.FC = () => {
 
     try {
       await signInWithGoogle();
-
-      // Success toast for Google login
-      // toast.success("Successfully signed in with Google!", {
-      //   duration: 4000,
-      //   position: "top-right",
-      // });
-
-      // Navigate after toast
     } catch (err: any) {
       const errorMessage =
         err.message || "Failed to sign in with Google. Please try again.";
@@ -153,7 +148,7 @@ export const SignIn: React.FC = () => {
   };
 
   return (
-    <div className="grid grid-cols-2">
+    <div className="grid grid-cols-1 lg:grid-cols-2">
       {/* Logo/Brand */}
 
       <div className="bg-white p-4 lg:py-8 lg:px-20">
@@ -364,7 +359,7 @@ export const SignIn: React.FC = () => {
       </div>
 
       {/* Image */}
-      <div className="relative">
+      <div className="relative hidden lg:block">
         {/* Blur placeholder */}
         <img src={blurImage} className="w-full h-screen object-cover" alt="" />
 
